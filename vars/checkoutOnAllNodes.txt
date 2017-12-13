@@ -1,0 +1,21 @@
+# checkoutOnAllNodes
+
+Clones and updates a repo to $HOME/${reponame} on all nodes with a given label.
+
+Parameters  ||
+----------- | --
+_label_     | The nodes to select, e.g. _packager_. Required.
+_repo_      | The repo to clone. Default: The git repo defined in the current build job.
+_dir_       | The directory to check out to, relative to `$HOME`. Default: derived from _repo_.
+_branch_    | The branch to checkout (variable `BRANCH_NAME`). Default: The branch
+            | from the current build job.
+
+## Example
+
+_Jenkinsfile:_
+
+	#!/usr/bin/groovy
+	@Library('lsdev-pipeline-library') _
+
+	cloneOnAllNodes(label: 'packager', repo: 'git@github.com:sillsdev/FwSupportTools.git',
+		dir: 'FwSupportTools', branch: 'develop')
