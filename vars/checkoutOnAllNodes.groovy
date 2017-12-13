@@ -2,6 +2,9 @@
 // Copyright (c) 2017 SIL International
 // This software is licensed under the MIT license (http://opensource.org/licenses/MIT)
 
+// NOTE: Currently (12/2017) it's not yet possible to do what we want (dynamically generate
+// parallel tasks) with a declarative pipeline, so we use a scripted pipeline here.
+
 def call(Map params = [:]) {
 	def nodeLabel = params.containsKey('label') ? params.label : null
 	def repo = params.containsKey('repo') ? params.repo : scm.getUserRemoteConfigs()[0].getUrl()
