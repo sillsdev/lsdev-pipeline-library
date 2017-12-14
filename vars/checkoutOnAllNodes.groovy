@@ -12,7 +12,7 @@ def call(Map params = [:]) {
 	fullPath = fullPath.endsWith(".git") ? fullPath.substring(0, fullPath.length() - 4) : fullPath
 	def defaultDir = fullPath.lastIndexOf('/') > 0 ? fullPath.substring(fullPath.lastIndexOf('/') + 1) : fullPath
 	def dir = params.containsKey('dir') ? params.dir : defaultDir
-	def branch = params.containsKey('branch') ? params.branch : BRANCH_NAME
+	def branch = params.containsKey('branch') ? params.branch : getBranch()
 
 	def tasks = getTasks(nodeLabel, repo, dir, branch)
 
@@ -23,7 +23,7 @@ def call(Map params = [:]) {
 	}
 }
 
-def getTasks(String nodeLabel, String repo, String dir, String branch) {
+private def getTasks(String nodeLabel, String repo, String dir, String branch) {
 	def matchingNodes = getMatchingNodes(nodeLabel)
 	def tasks = [:]
 	for (int i = 0; i < matchingNodes.size(); i++) {
@@ -44,7 +44,7 @@ git reset --hard origin/${branch}
 }
 
 @NonCPS
-def getMatchingNodes(String nodeLabel) {
+private def getMatchingNodes(String nodeLabel) {
 	def matchingNodes = []
 	jenkins.model.Jenkins.instance.nodes.each { n ->
 		if (n.getAssignedLabels().any { x -> x.getExpression().equals(nodeLabel) }) {
@@ -52,4 +52,9 @@ def getMatchingNodes(String nodeLabel) {
 		}
 	}
 	return matchingNodes
+}
+
+private def getBranch() {
+	def branchName = scm.getBranches()[0].getName()
+	return branchName.lastIndexOf('/') > 0 ? branchName.substring(branchName.lastIndexOf('/') + 1) : branchName
 }
