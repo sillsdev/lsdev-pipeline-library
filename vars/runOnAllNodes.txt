@@ -1,0 +1,17 @@
+# runOnAllNodes
+
+Run a command on all nodes with a given label.
+
+Parameters  ||
+----------- | --
+_label_     | The nodes to select, e.g. _packager_. Required.
+_command_   | The command to run. Will be run with the `sh` pipeline command. Required.
+
+## Example
+
+_Jenkinsfile:_
+
+	#!/usr/bin/groovy
+	@Library('lsdev-pipeline-library') _
+
+	runOnAllNodes(label: 'packager', command: 'echo "Hello world!"')
