@@ -35,6 +35,7 @@ private def getTasks(Utils utils, String nodeLabel, String repo, String dir, Str
 			node(thisNode) {
 				sh """#!/bin/bash -e
 cd $HOME
+echo "HOME=$HOME,dir=${dir}"
 [ ! -d "${dir}" ] && git clone --depth 1 --recurse-submodules --branch ${branch} ${repo} "${dir}"
 cd "${dir}"
 git fetch origin
