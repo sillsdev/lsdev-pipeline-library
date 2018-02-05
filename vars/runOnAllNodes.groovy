@@ -22,7 +22,7 @@ def call(Map params = [:]) {
 
 private def getTasks(String nodeLabel, String command) {
 	def utils = new Utils()
-	def matchingNodes = utils.getMatchingNodes(nodeLabel)
+	def matchingNodes = utils.getMatchingNodes(nodeLabel, true)
 	def tasks = [:]
 	for (int i = 0; i < matchingNodes.size(); i++) {
 		def thisNode = matchingNodes[i]

@@ -5,10 +5,11 @@
 package sil.pipeline
 
 @NonCPS
-def getMatchingNodes(String nodeLabel) {
+def getMatchingNodes(String nodeLabel, Boolean excludeOfflineNodes = false) {
 	def matchingNodes = []
 	jenkins.model.Jenkins.instance.nodes.each { n ->
-		if (n.getAssignedLabels().any { x -> x.getExpression().equals(nodeLabel) }) {
+		if (n.getAssignedLabels().any { x -> x.getExpression().equals(nodeLabel) } &&
+			(!excludeOfflineNodes || n.getComputer().isOnline())) {
 			matchingNodes.add(n.getDisplayName())
 		}
 	}

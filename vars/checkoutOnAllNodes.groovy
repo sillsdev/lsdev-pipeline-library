@@ -27,7 +27,7 @@ def call(Map params = [:]) {
 }
 
 private def getTasks(Utils utils, String nodeLabel, String repo, String dir, String branch) {
-	def matchingNodes = utils.getMatchingNodes(nodeLabel)
+	def matchingNodes = utils.getMatchingNodes(nodeLabel, true)
 	def tasks = [:]
 	for (int i = 0; i < matchingNodes.size(); i++) {
 		def thisNode = matchingNodes[i]
