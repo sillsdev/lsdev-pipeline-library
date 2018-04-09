@@ -21,4 +21,12 @@ def getBranch() {
 	return branchName.lastIndexOf('/') > 0 ? branchName.substring(branchName.lastIndexOf('/') + 1) : branchName
 }
 
+String getRepoName() {
+	return scm.getUserRemoteConfigs()[0].getUrl().tokenize('/').last().split("\\.")[0]
+}
+
+def isPullRequest() {
+	return getBranch().startsWith("PR-")
+}
+
 return this
