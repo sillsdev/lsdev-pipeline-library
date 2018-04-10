@@ -37,7 +37,12 @@ def call(Map params = [:]) {
 				pipelineTriggers([[$class: 'GitHubPushTrigger']])
 			])
 			timeout(time: 60, unit: 'MINUTES') {
-				return parallel(tasks)
+				try {
+					parallel(tasks)
+					currentBuild.result = "SUCCESS"
+				} catch(error) {
+					currentBuild.result = "FAILED"
+				}
 			}
 		}
 	}
