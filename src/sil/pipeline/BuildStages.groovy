@@ -12,7 +12,7 @@ def initialize(String repoName, String configuration) {
 	_configuration = configuration
 }
 
-def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet) {
+def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet, String nupkgPath) {
 	return {
 		node(winNodeSpec) {
 			def msbuild = tool winTool
@@ -50,15 +50,15 @@ def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet) {
 						echo "Upload nuget package"
 						withCredentials([string(credentialsId: 'nuget-api-key', variable: 'NuGetApiKey')]) {
 							bat """
-								build\\nuget.exe push -Source https://www.nuget.org/api/v2/package output\\nugetbuild\\*\\*.nupkg ${NuGetApiKey}
+								build\\nuget.exe push -Source https://www.nuget.org/api/v2/package ${nupkgPath.replace('/', '\\')} ${NuGetApiKey}
 								"""
 						}
-						archiveArtifacts 'output/nugetbuild/**/*.nupkg'
+						archiveArtifacts nupkgPath
 					}
 				}
 			}
 
-			nunit testResultsPattern: '** /TestResults.xml'
+			nunit testResultsPattern: '**/TestResults.xml'
 		}
 	}
 }

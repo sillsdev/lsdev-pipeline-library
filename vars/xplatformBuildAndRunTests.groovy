@@ -18,6 +18,7 @@ def call(Map params = [:]) {
 	def linuxTool = params.containsKey('linuxTool') ? params.linuxTool : 'xbuild'
 	def uploadNuGet = params.containsKey('uploadNuGet') ? params.uploadNuGet : false
 	def configuration = params.containsKey('configuration') ? params.configuration : 'Release'
+	def nupkgPath = params.containsKey('nupkgPath') ? params.nupkgPath : 'output/nugetbuild/*.nupkg'
 
 	def utils = new Utils()
 	def buildStages = new BuildStages()
@@ -26,7 +27,7 @@ def call(Map params = [:]) {
 
 	Map tasks = [failFast: true]
 
-	tasks['Windows'] = buildStages.getWinBuildStage(winNodeSpec, winTool, uploadNuGet)
+	tasks['Windows'] = buildStages.getWinBuildStage(winNodeSpec, winTool, uploadNuGet, nupkgPath)
 	tasks['Linux'] = buildStages.getLinuxBuildStage(linuxNodeSpec, linuxTool)
 
 	ansiColor('xterm') {
