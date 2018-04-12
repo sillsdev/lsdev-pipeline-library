@@ -29,4 +29,18 @@ def isPullRequest() {
 	return getBranch().startsWith("PR-")
 }
 
+// Returns true if any file exists that matches the file specification `spec`.
+// Contrary to `fileExists`, this method can contain wildcards in the file spec.
+def anyFileExists(spec) {
+	if (spec.indexOf('*') < 0) {
+		return fileExists(spec)
+	}
+
+	def beforeWildcard = spec.substring(0, spec.indexOf('*'))
+	def basedir = beforeWildcard.substring(0, beforeWildcard.lastIndexOf('/'))
+	def pattern = spec.substring(basedir.length() + 1)
+
+	return new FileNameFinder().getFileNames(basedir, pattern).size() > 0
+}
+
 return this
