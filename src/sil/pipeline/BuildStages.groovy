@@ -32,8 +32,10 @@ def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet, St
 					"${msbuild}" /t:Build /property:Configuration=${_configuration} build/${_repoName}.proj
 					"""
 
-				version = readFile "output/${_configuration}/version.txt"
-				currentBuild.displayName = "${version.trim()}-${env.BUILD_NUMBER}"
+				if (fileExists("output/${_configuration}/version.txt")) {
+					version = readFile "output/${_configuration}/version.txt"
+					currentBuild.displayName = "${version.trim()}-${env.BUILD_NUMBER}"
+				}
 			}
 
 			stage('Tests Win') {
