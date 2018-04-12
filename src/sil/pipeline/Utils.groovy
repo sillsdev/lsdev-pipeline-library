@@ -22,7 +22,7 @@ def getBranch() {
 }
 
 String getRepoName() {
-	return scm.getUserRemoteConfigs()[0].getUrl().tokenize('/').last().split("\\.")[0]
+	return scm.getUserRemoteConfigs()[0].getUrl().tokenize('/').last() - '.git'
 }
 
 def isPullRequest() {
