@@ -11,14 +11,20 @@
 import sil.pipeline.BuildStages
 import sil.pipeline.Utils
 
-def call(Map params = [:]) {
-	def winNodeSpec = params.containsKey('winNodeSpec') ? params.winNodeSpec : 'windows'
-	def winTool = params.containsKey('winTool') ? params.winTool : 'msbuild'
-	def linuxNodeSpec = params.containsKey('linuxNodeSpec') ? params.linuxNodeSpec : 'linux'
-	def linuxTool = params.containsKey('linuxTool') ? params.linuxTool : 'xbuild'
-	def uploadNuGet = params.containsKey('uploadNuGet') ? params.uploadNuGet : false
-	def configuration = params.containsKey('configuration') ? params.configuration : 'Release'
-	def nupkgPath = params.containsKey('nupkgPath') ? params.nupkgPath : 'output/nugetbuild/*.nupkg'
+def call(body) {
+	// evaluate the body block, and collect configuration into the object
+	def params = [:]
+	body.resolveStrategy = Closure.DELEGATE_FIRST
+	body.delegate = params
+	body()
+
+	def winNodeSpec = params.winNodeSpec ?: 'windows'
+	def winTool = params.winTool ?: 'msbuild'
+	def linuxNodeSpec = params.linuxNodeSpec ?: 'linux'
+	def linuxTool = params.linuxTool ?: 'xbuild'
+	def uploadNuGet = params.uploadNuGet ?: false
+	def configuration = params.configuration ?: 'Release'
+	def nupkgPath = params.nupkgPath ?: 'output/nugetbuild/*.nupkg'
 
 	def utils = new Utils()
 	def buildStages = new BuildStages()
@@ -43,6 +49,7 @@ def call(Map params = [:]) {
 					currentBuild.result = "SUCCESS"
 				} catch(error) {
 					currentBuild.result = "FAILED"
+					throw error
 				}
 			}
 		}
