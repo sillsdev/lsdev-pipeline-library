@@ -24,7 +24,7 @@ def call(body) {
 	def linuxTool = params.linuxTool ?: 'xbuild'
 	def uploadNuGet = params.uploadNuGet ?: false
 	def configuration = params.configuration ?: 'Release'
-	def nupkgPath = params.nupkgPath ?: 'output/nugetbuild/*.nupkg'
+	def nupkgPath = params.nupkgPath ?: "output/${configuration}/*.nupkg"
 
 	def utils = new Utils()
 	def buildStages = new BuildStages()

@@ -45,6 +45,13 @@ def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet, St
 					"""
 			}
 
+			stage('Build Package') {
+				echo "Building package for ${_repoName}"
+				bat """
+					"${msbuild}" /t:Pack /property:Configuration=${_configuration} build/${_repoName}.proj
+					"""
+			}
+
 			if (uploadNuGet) {
 				stage('Upload nuget') {
 					def utils = new Utils()
