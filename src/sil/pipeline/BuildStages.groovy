@@ -39,39 +39,46 @@ def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet, St
 			}
 
 			stage('Tests Win') {
-				echo "Running unit tests"
-				bat """
-					"${msbuild}" /t:TestOnly /property:Configuration=${_configuration} build/${_repoName}.proj
-					"""
-			}
-
-			stage('Build Package') {
-				echo "Building package for ${_repoName}"
-				bat """
-					"${msbuild}" /t:Pack /property:Configuration=${_configuration} build/${_repoName}.proj
-					"""
-			}
-
-			if (uploadNuGet) {
-				stage('Upload nuget') {
-					def utils = new Utils()
-					if (!utils.isPullRequest()) {
-						if (!fileExists("build/nuget.exe")) {
-							echo "Download nuget"
-							powershell 'Invoke-WebRequest https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile build/nuget.exe'
-						}
-						echo "Upload nuget package"
-						withCredentials([string(credentialsId: 'nuget-api-key', variable: 'NuGetApiKey')]) {
-							bat """
-								build\\nuget.exe push -Source https://www.nuget.org/api/v2/package ${nupkgPath.replace('/', '\\')} ${NuGetApiKey}
-								"""
-						}
-						archiveArtifacts nupkgPath
-					}
+				try {
+					echo "Running unit tests"
+					bat """
+						"${msbuild}" /t:TestOnly /property:Configuration=${_configuration} build/${_repoName}.proj
+						"""
+					currentBuild.result = "SUCCESS"
+				} catch(err) {
+					currentBuild.result = "UNSTABLE"
+				} finally {
+					nunit testResultsPattern: '**/TestResults.xml'
 				}
 			}
 
-			nunit testResultsPattern: '**/TestResults.xml'
+			if (currentBuild.result != "UNSTABLE") {
+				stage('Build Package') {
+					echo "Building package for ${_repoName}"
+					bat """
+						"${msbuild}" /t:Pack /property:Configuration=${_configuration} build/${_repoName}.proj
+						"""
+				}
+
+				if (uploadNuGet) {
+					stage('Upload nuget') {
+						def utils = new Utils()
+						if (!utils.isPullRequest()) {
+							if (!fileExists("build/nuget.exe")) {
+								echo "Download nuget"
+								powershell 'Invoke-WebRequest https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile build/nuget.exe'
+							}
+							echo "Upload nuget package"
+							withCredentials([string(credentialsId: 'nuget-api-key', variable: 'NuGetApiKey')]) {
+								bat """
+									build\\nuget.exe push -Source https://www.nuget.org/api/v2/package ${nupkgPath.replace('/', '\\')} ${NuGetApiKey}
+									"""
+							}
+							archiveArtifacts nupkgPath
+						}
+					}
+				}
+			}
 		}
 	}
 }
@@ -96,13 +103,18 @@ def getLinuxBuildStage(String linuxNodeSpec, String linuxTool) {
 			}
 
 			stage('Tests Linux') {
-				echo "Running unit tests"
-				sh """#!/bin/bash
-					"${msbuild}" /t:TestOnly /property:Configuration=${_configuration} build/${_repoName}.proj
-					"""
+				try {
+					echo "Running unit tests"
+					sh """#!/bin/bash
+						"${msbuild}" /t:TestOnly /property:Configuration=${_configuration} build/${_repoName}.proj
+						"""
+					currentBuild.result = "SUCCESS"
+				} catch(err) {
+					currentBuild.result = "UNSTABLE"
+				} finally {
+					nunit testResultsPattern: '**/TestResults.xml'
+				}
 			}
-
-			nunit testResultsPattern: '**/TestResults.xml'
 		}
 	}
 }

@@ -46,7 +46,6 @@ def call(body) {
 			timeout(time: 60, unit: 'MINUTES') {
 				try {
 					parallel(tasks)
-					currentBuild.result = "SUCCESS"
 				} catch(error) {
 					currentBuild.result = "FAILED"
 					throw error
