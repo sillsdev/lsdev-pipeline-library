@@ -11,7 +11,7 @@ _linuxTool_     | Build toolname to use when building on Linux. Defaults to 'xbu
 _configuration_ | The configuration to build. Defaults to 'Release'.
 _uploadNuGet_   | `true` to upload nuget packages (all `*.nupkg` files). Defaults to `false`.
 _nupkgPath_     | Path to the nuget package that will be uploaded. Defaults to
-                | 'output/nugetbuild/*.nupkg'.
+                | 'output/${configuration}/*.nupkg'.
 
 ## Requirements
 
@@ -19,7 +19,8 @@ Assumptions:
 
 - msbuild file named according to the git repo (`build/<reponame>.proj`)
 - targets `Build` and `TestOnly`
-- `nuget.exe` in `build` subdirectory
+- `nuget.exe` in `build` subdirectory (required for uploading nuget package. If it's not
+  there it'll be downloaded automatically)
 
 ## Example
 

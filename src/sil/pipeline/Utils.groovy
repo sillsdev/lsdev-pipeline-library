@@ -43,4 +43,10 @@ def anyFileExists(spec) {
 	return new FileNameFinder().getFileNames(basedir, pattern).size() > 0
 }
 
+def downloadFile(address, filePath) {
+  new File(filePath).withOutputStream { out ->
+    out << new URL(address).openStream()
+  }
+}
+
 return this

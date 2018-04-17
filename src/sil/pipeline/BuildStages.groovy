@@ -56,6 +56,10 @@ def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet, St
 				stage('Upload nuget') {
 					def utils = new Utils()
 					if (!utils.isPullRequest()) {
+						if (!fileExists("build/nuget.exe")) {
+							echo "Download nuget"
+							powershell 'Invoke-WebRequest https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile build/nuget.exe'
+						}
 						echo "Upload nuget package"
 						withCredentials([string(credentialsId: 'nuget-api-key', variable: 'NuGetApiKey')]) {
 							bat """
