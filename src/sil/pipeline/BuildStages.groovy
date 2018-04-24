@@ -61,9 +61,13 @@ def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet, St
 				}
 
 				if (uploadNuGet) {
-					stage('Upload nuget') {
-						def utils = new Utils()
-						if (!utils.isPullRequest()) {
+					def utils = new Utils()
+					if (utils.isPullRequest()) {
+						stage('Archive nuget') {
+							archiveArtifacts nupkgPath
+						}
+					} else {
+						stage('Upload nuget') {
 							if (!fileExists("build/nuget.exe")) {
 								echo "Download nuget"
 								powershell 'Invoke-WebRequest https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile build/nuget.exe'
