@@ -46,13 +46,13 @@ def call(body) {
 			timeout(time: 60, unit: 'MINUTES') {
 				try {
 					parallel(tasks)
-
-					if (uploadNuGet && currentBuild.result != "UNSTABLE" && currentBuild != "FAILED") {
-						buildStages.uploadStagedNugetPackages(winNodeSpec)
-					}
 				} catch(error) {
 					currentBuild.result = "FAILED"
 					throw error
+				}
+
+				if (uploadNuGet && currentBuild.result != "UNSTABLE" && currentBuild != "FAILED") {
+					buildStages.uploadStagedNugetPackages(winNodeSpec)
 				}
 			}
 		}
