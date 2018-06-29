@@ -61,27 +61,34 @@ def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet, St
 				}
 
 				if (uploadNuGet) {
-					def utils = new Utils()
-					if (utils.isPullRequest()) {
-						stage('Archive nuget') {
-							archiveArtifacts nupkgPath
-						}
-					} else {
-						stage('Upload nuget') {
-							if (!fileExists("build/nuget.exe")) {
-								echo "Download nuget"
-								powershell 'Invoke-WebRequest https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile build/nuget.exe'
-							}
-							echo "Upload nuget package"
-							withCredentials([string(credentialsId: 'nuget-api-key', variable: 'NuGetApiKey')]) {
-								bat """
-									build\\nuget.exe push -Source https://www.nuget.org/api/v2/package ${nupkgPath.replace('/', '\\')} ${NuGetApiKey}
-									"""
-							}
-							archiveArtifacts nupkgPath
-						}
-					}
+					stash name: "nuget-packages", includes: nupkgPath
 				}
+			}
+		}
+	}
+}
+
+def uploadStagedNugetPackages(String winNodeSpec, ) {
+	node(winNodeSpec) {
+		unstash "nuget-packages"
+		def utils = new Utils()
+		if (utils.isPullRequest()) {
+			stage('Archive nuget') {
+				archiveArtifacts nupkgPath
+			}
+		} else {
+			stage('Upload nuget') {
+				if (!fileExists("build/nuget.exe")) {
+					echo "Download nuget"
+					powershell 'Invoke-WebRequest https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile build/nuget.exe'
+				}
+				echo "Upload nuget package"
+				withCredentials([string(credentialsId: 'nuget-api-key', variable: 'NuGetApiKey')]) {
+					bat """
+						build\\nuget.exe push -Source https://www.nuget.org/api/v2/package ${nupkgPath.replace('/', '\\')} ${NuGetApiKey}
+						"""
+				}
+				archiveArtifacts nupkgPath
 			}
 		}
 	}
