@@ -68,7 +68,7 @@ def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet, St
 	}
 }
 
-def uploadStagedNugetPackages(String winNodeSpec) {
+def uploadStagedNugetPackages(String winNodeSpec, String nupkgPath) {
 	node(winNodeSpec) {
 		unstash "nuget-packages"
 		def utils = new Utils()
