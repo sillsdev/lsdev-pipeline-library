@@ -52,7 +52,7 @@ def call(body) {
 					throw error
 				}
 
-				if (uploadNuGet && currentBuild.result != "UNSTABLE" && currentBuild != "FAILED") {
+				if (uploadNuGet && currentBuild.result != "UNSTABLE" && currentBuild.result != "FAILED") {
 					buildStages.uploadStagedNugetPackages(winNodeSpec, nupkgPath)
 				}
 			}
