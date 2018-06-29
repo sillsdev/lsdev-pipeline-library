@@ -12,7 +12,8 @@ def initialize(String repoName, String configuration) {
 	_configuration = configuration
 }
 
-def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet, String nupkgPath) {
+def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet, String nupkgPath,
+	Boolean clean) {
 	return {
 		node(winNodeSpec) {
 			def msbuild = tool winTool
@@ -24,6 +25,12 @@ def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet, St
 				bat """
 					"${git}" fetch origin --tags
 					"""
+
+				if (clean) {
+					bat """
+						"${git}" clean -dxf
+						"""
+				}
 			}
 
 			stage('Build Win') {
@@ -98,7 +105,7 @@ def uploadStagedNugetPackages(String winNodeSpec, String nupkgPath) {
 	}
 }
 
-def getLinuxBuildStage(String linuxNodeSpec, String linuxTool) {
+def getLinuxBuildStage(String linuxNodeSpec, String linuxTool, Boolean clean) {
 	return {
 		node(linuxNodeSpec) {
 			def msbuild = tool linuxTool
@@ -108,6 +115,10 @@ def getLinuxBuildStage(String linuxNodeSpec, String linuxTool) {
 				checkout scm
 
 				sh "${git} fetch origin --tags"
+
+				if (clean) {
+					sh "${git} clean -dxf"
+				}
 			}
 
 			stage('Build Linux') {

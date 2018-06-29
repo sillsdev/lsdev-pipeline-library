@@ -25,6 +25,7 @@ def call(body) {
 	def uploadNuGet = params.uploadNuGet ?: false
 	def configuration = params.configuration ?: 'Release'
 	def nupkgPath = params.nupkgPath ?: "output/${configuration}/*.nupkg"
+	def clean = params.clean ?: false
 
 	def utils = new Utils()
 	def buildStages = new BuildStages()
@@ -33,8 +34,8 @@ def call(body) {
 
 	Map tasks = [failFast: true]
 
-	tasks['Windows'] = buildStages.getWinBuildStage(winNodeSpec, winTool, uploadNuGet, nupkgPath)
-	tasks['Linux'] = buildStages.getLinuxBuildStage(linuxNodeSpec, linuxTool)
+	tasks['Windows'] = buildStages.getWinBuildStage(winNodeSpec, winTool, uploadNuGet, nupkgPath, clean)
+	tasks['Linux'] = buildStages.getLinuxBuildStage(linuxNodeSpec, linuxTool, clean)
 
 	ansiColor('xterm') {
 		timestamps {
