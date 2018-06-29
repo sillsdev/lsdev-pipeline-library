@@ -83,10 +83,14 @@ def uploadStagedNugetPackages(String winNodeSpec, String nupkgPath) {
 					powershell 'Invoke-WebRequest https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile build/nuget.exe'
 				}
 				echo "Upload nuget package"
-				withCredentials([string(credentialsId: 'nuget-api-key', variable: 'NuGetApiKey')]) {
-					bat """
-						build\\nuget.exe push -Source https://www.nuget.org/api/v2/package ${nupkgPath.replace('/', '\\')} ${NuGetApiKey}
-						"""
+				try {
+					withCredentials([string(credentialsId: 'nuget-api-key', variable: 'NuGetApiKey')]) {
+						bat """
+							build\\nuget.exe push -Source https://www.nuget.org/api/v2/package ${nupkgPath.replace('/', '\\')} ${NuGetApiKey}
+							"""
+					}
+				} catch (err) {
+					echo "Uploading of nuget package failed (ignored): ${err}"
 				}
 				archiveArtifacts nupkgPath
 			}
