@@ -13,11 +13,16 @@ def initialize(String repoName, String configuration) {
 }
 
 def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet, String nupkgPath,
-	Boolean clean) {
+	Boolean clean, String frameworkLabel) {
 	return {
 		node(winNodeSpec) {
 			def msbuild = tool winTool
 			def git = tool(name: 'Default', type: 'git')
+			def framework
+			if (frameworkLabel != null) {
+				framework = tool(name: frameworkLabel, type: 'custom')
+			}
+
 
 			stage('Checkout Win') {
 				checkout scm
@@ -105,11 +110,16 @@ def uploadStagedNugetPackages(String winNodeSpec, String nupkgPath) {
 	}
 }
 
-def getLinuxBuildStage(String linuxNodeSpec, String linuxTool, Boolean clean) {
+def getLinuxBuildStage(String linuxNodeSpec, String linuxTool, Boolean clean,
+	String frameworkLabel) {
 	return {
 		node(linuxNodeSpec) {
 			def msbuild = tool linuxTool
 			def git = tool(name: 'Default', type: 'git')
+			def framework
+			if (frameworkLabel != null) {
+				framework = tool(name: frameworkLabel, type: 'custom')
+			}
 
 			stage('Checkout Linux') {
 				checkout scm
