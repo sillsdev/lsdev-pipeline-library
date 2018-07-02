@@ -20,7 +20,7 @@ def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet, St
 			def git = tool(name: 'Default', type: 'git')
 			def framework
 			if (frameworkLabel != null) {
-				framework = tool(name: frameworkLabel, type: 'custom')
+				framework = tool(name: frameworkLabel, type: 'com.cloudbees.jenkins.plugins.customtools.CustomTool')
 			}
 
 
@@ -118,7 +118,7 @@ def getLinuxBuildStage(String linuxNodeSpec, String linuxTool, Boolean clean,
 			def git = tool(name: 'Default', type: 'git')
 			def framework
 			if (frameworkLabel != null) {
-				framework = tool(name: frameworkLabel, type: 'custom')
+				framework = tool(name: frameworkLabel, type: 'com.cloudbees.jenkins.plugins.customtools.CustomTool')
 			}
 
 			stage('Checkout Linux') {
