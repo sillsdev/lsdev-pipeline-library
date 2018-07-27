@@ -28,6 +28,7 @@ def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet, St
 				checkout scm
 
 				bat """
+					"${git}" fetch origin
 					"${git}" fetch origin --tags
 					"""
 
