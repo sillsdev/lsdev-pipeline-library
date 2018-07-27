@@ -18,6 +18,10 @@ def call(body) {
 	body.delegate = params
 	body()
 
+	def utils = new Utils()
+	def buildStages = new BuildStages()
+	def repo = utils.getRepoName()
+
 	def winNodeSpec = params.winNodeSpec ?: 'windows'
 	def winTool = params.winTool ?: 'msbuild'
 	def linuxNodeSpec = params.linuxNodeSpec ?: 'linux'
@@ -28,11 +32,9 @@ def call(body) {
 	def nupkgPath = params.nupkgPath ?: "output/${configuration}/*.nupkg"
 	def clean = params.clean ?: false
 	def restorePackages = params.restorePackages ?: false
+	def buildFileName = params.buildFileName ?: "build/${repo}.proj"
 
-	def utils = new Utils()
-	def buildStages = new BuildStages()
-	def repo = utils.getRepoName()
-	buildStages.initialize(repo, configuration)
+	buildStages.initialize(repo, buildFileName, configuration)
 
 	Map tasks = [failFast: true]
 

@@ -16,12 +16,12 @@ _nupkgPath_       | Path to the nuget package that will be uploaded. Defaults to
 _clean_           | `true` to run `git clean -dxf` before the build. Defaults to `false`.
 _restorePackages_ | `true` to add a separate `RestorePackages` step before the `Build` step.
                   | Defaults to `false`.
+_buildFileName_   | Name of the msbuild project file. Defaults to `build/<reponame>.proj`.
 
 ## Requirements
 
 Assumptions:
 
-- msbuild file named according to the git repo (`build/<reponame>.proj`)
 - targets `Build` and `TestOnly`
 - `nuget.exe` in `build` subdirectory (required for uploading nuget package. If it's not
   there it'll be downloaded automatically)

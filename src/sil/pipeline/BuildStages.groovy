@@ -6,9 +6,11 @@ package sil.pipeline
 
 String _repoName
 String _configuration
+String _buildFileName
 
-def initialize(String repoName, String configuration) {
+def initialize(String repoName, String buildFileName, String configuration) {
 	_repoName = repoName
+	_buildFileName = buildFileName
 	_configuration = configuration
 }
 
@@ -42,7 +44,7 @@ def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet, St
 				stage('Package Restore Win') {
 					echo "Restoring packages"
 					bat """
-						"${msbuild}" /t:Restore /property:Configuration=${_configuration} build/${_repoName}.proj
+						"${msbuild}" /t:Restore /property:Configuration=${_configuration} ${_buildFileName}
 						"""
 				}
 			}
@@ -50,7 +52,7 @@ def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet, St
 			stage('Build Win') {
 				echo "Building ${_repoName}"
 				bat """
-					"${msbuild}" /t:Build /property:Configuration=${_configuration} build/${_repoName}.proj
+					"${msbuild}" /t:Build /property:Configuration=${_configuration} ${_buildFileName}
 					"""
 
 				if (fileExists("output/${_configuration}/version.txt")) {
@@ -63,7 +65,7 @@ def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet, St
 				try {
 					echo "Running unit tests"
 					bat """
-						"${msbuild}" /t:TestOnly /property:Configuration=${_configuration} build/${_repoName}.proj
+						"${msbuild}" /t:TestOnly /property:Configuration=${_configuration} ${_buildFileName}
 						"""
 					currentBuild.result = "SUCCESS"
 				} catch(err) {
@@ -74,10 +76,10 @@ def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet, St
 			}
 
 			if (currentBuild.result != "UNSTABLE") {
-				stage('Build Package') {
-					echo "Building package for ${_repoName}"
+				stage('Build NuGet Package') {
+					echo "Building nuget package for ${_repoName}"
 					bat """
-						"${msbuild}" /t:Pack /property:Configuration=${_configuration} build/${_repoName}.proj
+						"${msbuild}" /t:Pack /property:Configuration=${_configuration} ${_buildFileName}
 						"""
 				}
 
@@ -146,15 +148,15 @@ def getLinuxBuildStage(String linuxNodeSpec, String linuxTool, Boolean clean,
 				stage('Package Restore Linux') {
 					echo "Restoring packages"
 					sh """#!/bin/bash
-						"${msbuild}" /t:Restore /property:Configuration=${_configuration} build/${_repoName}.proj
+						"${msbuild}" /t:Restore /property:Configuration=${_configuration} ${_buildFileName}
 						"""
 				}
 			}
 
 			stage('Build Linux') {
-				echo "Building ${_repoName}"
+				echo "Building ${_buildFileName}"
 				sh """#!/bin/bash
-					"${msbuild}" /t:Build /property:Configuration=${_configuration} build/${_repoName}.proj
+					"${msbuild}" /t:Build /property:Configuration=${_configuration} ${_buildFileName}
 					"""
 			}
 
@@ -162,7 +164,7 @@ def getLinuxBuildStage(String linuxNodeSpec, String linuxTool, Boolean clean,
 				try {
 					echo "Running unit tests"
 					sh """#!/bin/bash
-						"${msbuild}" /t:TestOnly /property:Configuration=${_configuration} build/${_repoName}.proj
+						"${msbuild}" /t:TestOnly /property:Configuration=${_configuration} ${_buildFileName}
 						"""
 					currentBuild.result = "SUCCESS"
 				} catch(err) {
