@@ -13,7 +13,7 @@ def initialize(String repoName, String configuration) {
 }
 
 def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet, String nupkgPath,
-	Boolean clean, String frameworkLabel) {
+	Boolean clean, String frameworkLabel, Boolean restorePackages) {
 	return {
 		node(winNodeSpec) {
 			def msbuild = tool winTool
@@ -22,7 +22,6 @@ def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet, St
 			if (frameworkLabel != null) {
 				framework = tool(name: frameworkLabel, type: 'com.cloudbees.jenkins.plugins.customtools.CustomTool')
 			}
-
 
 			stage('Checkout Win') {
 				checkout scm
@@ -35,6 +34,15 @@ def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet, St
 				if (clean) {
 					bat """
 						"${git}" clean -dxf
+						"""
+				}
+			}
+
+			if (restorePackages) {
+				stage('Package Restore Win') {
+					echo "Restoring packages"
+					bat """
+						"${msbuild}" /t:Restore /property:Configuration=${_configuration} build/${_repoName}.proj
 						"""
 				}
 			}
@@ -112,7 +120,7 @@ def uploadStagedNugetPackages(String winNodeSpec, String nupkgPath) {
 }
 
 def getLinuxBuildStage(String linuxNodeSpec, String linuxTool, Boolean clean,
-	String frameworkLabel) {
+	String frameworkLabel, Boolean restorePackages) {
 	return {
 		node(linuxNodeSpec) {
 			def msbuild = tool linuxTool
@@ -125,10 +133,21 @@ def getLinuxBuildStage(String linuxNodeSpec, String linuxTool, Boolean clean,
 			stage('Checkout Linux') {
 				checkout scm
 
+				sh "${git} fetch origin"
+
 				sh "${git} fetch origin --tags"
 
 				if (clean) {
 					sh "${git} clean -dxf"
+				}
+			}
+
+			if (restorePackages) {
+				stage('Package Restore Linux') {
+					echo "Restoring packages"
+					sh """#!/bin/bash
+						"${msbuild}" /t:Restore /property:Configuration=${_configuration} build/${_repoName}.proj
+						"""
 				}
 			}
 

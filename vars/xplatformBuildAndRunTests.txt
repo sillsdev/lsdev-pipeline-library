@@ -2,18 +2,20 @@
 
 Build a project and run tests on both a Windows and Linux node.
 
-Parameters      ||
---------------- | --
-_winNodeSpec_   | Specification/label of the Windows build agent. Defaults to 'windows'.
-_winTool_       | Build toolname to use when building on Windows. Defaults to 'msbuild'.
-_linuxNodeSpec_ | Specification/label of the Linux build agent. Defaults to 'linux'.
-_linuxTool_     | Build toolname to use when building on Linux. Defaults to 'xbuild'.
-_framework_     | Label of the .NET framework. Default: unspecified
-_configuration_ | The configuration to build. Defaults to 'Release'.
-_uploadNuGet_   | `true` to upload nuget packages (all `*.nupkg` files). Defaults to `false`.
-_nupkgPath_     | Path to the nuget package that will be uploaded. Defaults to
-                | 'output/${configuration}/*.nupkg'.
-_clean_         | `true` to run `git clean -dxf` before the build. Defaults to `false`.
+Parameters        ||
+----------------- | --
+_winNodeSpec_     | Specification/label of the Windows build agent. Defaults to `windows`.
+_winTool_         | Build toolname to use when building on Windows. Defaults to `msbuild`.
+_linuxNodeSpec_   | Specification/label of the Linux build agent. Defaults to `linux`.
+_linuxTool_       | Build toolname to use when building on Linux. Defaults to `xbuild`.
+_framework_       | Label of the .NET framework. Default: unspecified
+_configuration_   | The configuration to build. Defaults to `Release`.
+_uploadNuGet_     | `true` to upload nuget packages (all `*.nupkg` files). Defaults to `false`.
+_nupkgPath_       | Path to the nuget package that will be uploaded. Defaults to
+                  | `output/${configuration}/*.nupkg`.
+_clean_           | `true` to run `git clean -dxf` before the build. Defaults to `false`.
+_restorePackages_ | `true` to add a separate `RestorePackages` step before the `Build` step.
+                  | Defaults to `false`.
 
 ## Requirements
 
@@ -23,6 +25,8 @@ Assumptions:
 - targets `Build` and `TestOnly`
 - `nuget.exe` in `build` subdirectory (required for uploading nuget package. If it's not
   there it'll be downloaded automatically)
+- For the `restorePackages` parameter to work, the msbuild file has to have a target named
+  `Restore`.
 
 ## Example
 
