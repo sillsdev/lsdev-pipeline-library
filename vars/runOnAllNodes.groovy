@@ -13,9 +13,11 @@ def call(Map params = [:]) {
 
 	def tasks = getTasks(nodeLabel, command)
 
-	timestamps {
-		stage('Checkout') {
-			return parallel(tasks)
+	ansiColor('xterm') {
+		timestamps {
+			stage('Checkout') {
+				return parallel(tasks)
+			}
 		}
 	}
 }

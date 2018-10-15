@@ -19,9 +19,11 @@ def call(Map params = [:]) {
 
 	def tasks = getTasks(utils, nodeLabel, repo, dir, branch)
 
-	timestamps {
-		stage('Checkout') {
-			return parallel(tasks)
+	ansiColor('xterm') {
+		timestamps {
+			stage('Checkout') {
+				return parallel(tasks)
+			}
 		}
 	}
 }
