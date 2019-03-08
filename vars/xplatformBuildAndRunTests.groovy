@@ -6,7 +6,7 @@
 // NOTE: If we'd use a declarative pipeline we wouldn't be able to split this job
 // into multiple methods. The doc says (https://jenkins.io/doc/book/pipeline/shared-libraries/#defining-declarative-pipelines)
 // "Only entire pipeline`s can be defined in shared libraries as of this time. This can only be
-// done in `vars/*.groovy`, and only in a call method.
+// done in `vars/*.groovy`, and only in a call method."
 
 import sil.pipeline.BuildStages
 import sil.pipeline.Utils
