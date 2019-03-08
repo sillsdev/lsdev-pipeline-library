@@ -125,52 +125,54 @@ def getLinuxBuildStage(String linuxNodeSpec, String linuxTool, Boolean clean,
 	String frameworkLabel, Boolean restorePackages) {
 	return {
 		node(linuxNodeSpec) {
-			def msbuild = tool linuxTool
-			def git = tool(name: 'Default', type: 'git')
-			def framework
-			if (frameworkLabel != null) {
-				framework = tool(name: frameworkLabel, type: 'com.cloudbees.jenkins.plugins.customtools.CustomTool')
-			}
-
-			stage('Checkout Linux') {
-				checkout scm
-
-				sh "${git} fetch origin"
-
-				sh "${git} fetch origin --tags"
-
-				if (clean) {
-					sh "${git} clean -dxf"
+			wrap([$class: 'Xvfb']) {
+				def msbuild = tool linuxTool
+				def git = tool(name: 'Default', type: 'git')
+				def framework
+				if (frameworkLabel != null) {
+					framework = tool(name: frameworkLabel, type: 'com.cloudbees.jenkins.plugins.customtools.CustomTool')
 				}
-			}
 
-			if (restorePackages) {
-				stage('Package Restore Linux') {
-					echo "Restoring packages"
+				stage('Checkout Linux') {
+					checkout scm
+
+					sh "${git} fetch origin"
+
+					sh "${git} fetch origin --tags"
+
+					if (clean) {
+						sh "${git} clean -dxf"
+					}
+				}
+
+				if (restorePackages) {
+					stage('Package Restore Linux') {
+						echo "Restoring packages"
+						sh """#!/bin/bash
+							"${msbuild}" /t:Restore /property:Configuration=${_configuration} ${_buildFileName}
+							"""
+					}
+				}
+
+				stage('Build Linux') {
+					echo "Building ${_buildFileName}"
 					sh """#!/bin/bash
-						"${msbuild}" /t:Restore /property:Configuration=${_configuration} ${_buildFileName}
+						"${msbuild}" /t:Build /property:Configuration=${_configuration} ${_buildFileName}
 						"""
 				}
-			}
 
-			stage('Build Linux') {
-				echo "Building ${_buildFileName}"
-				sh """#!/bin/bash
-					"${msbuild}" /t:Build /property:Configuration=${_configuration} ${_buildFileName}
-					"""
-			}
-
-			stage('Tests Linux') {
-				try {
-					echo "Running unit tests"
-					sh """#!/bin/bash
-						"${msbuild}" /t:TestOnly /property:Configuration=${_configuration} ${_buildFileName}
-						"""
-					currentBuild.result = "SUCCESS"
-				} catch(err) {
-					currentBuild.result = "UNSTABLE"
-				} finally {
-					nunit testResultsPattern: '**/TestResults.xml'
+				stage('Tests Linux') {
+					try {
+						echo "Running unit tests"
+						sh """#!/bin/bash
+							"${msbuild}" /t:TestOnly /property:Configuration=${_configuration} ${_buildFileName}
+							"""
+						currentBuild.result = "SUCCESS"
+					} catch(err) {
+						currentBuild.result = "UNSTABLE"
+					} finally {
+						nunit testResultsPattern: '**/TestResults.xml'
+					}
 				}
 			}
 		}
