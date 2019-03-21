@@ -17,7 +17,7 @@ def initialize(String repoName, String buildFileName, String configuration) {
 def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet, String nupkgPath,
 	Boolean clean, String frameworkLabel, Boolean restorePackages) {
 	return {
-		throttle([ "${_repoName}_Windows" ]) {
+		throttle([ 'one-per-node' ]) {
 			node(winNodeSpec) {
 				def msbuild = tool winTool
 				def git = tool(name: 'Default', type: 'git')
@@ -131,7 +131,7 @@ def uploadStagedNugetPackages(String winNodeSpec, String nupkgPath) {
 def getLinuxBuildStage(String linuxNodeSpec, String linuxTool, Boolean clean,
 	String frameworkLabel, Boolean restorePackages) {
 	return {
-		throttle([ "${_repoName}_Linux" ]) {
+		throttle([ 'one-per-node' ]) {
 			node(linuxNodeSpec) {
 				wrap([$class: 'Xvfb']) {
 					def msbuild = tool linuxTool
