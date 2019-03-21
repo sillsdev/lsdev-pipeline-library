@@ -17,74 +17,81 @@ def initialize(String repoName, String buildFileName, String configuration) {
 def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet, String nupkgPath,
 	Boolean clean, String frameworkLabel, Boolean restorePackages) {
 	return {
-		node(winNodeSpec) {
-			def msbuild = tool winTool
-			def git = tool(name: 'Default', type: 'git')
-			def framework
-			if (frameworkLabel != null) {
-				framework = tool(name: frameworkLabel, type: 'com.cloudbees.jenkins.plugins.customtools.CustomTool')
-			}
+		throttle([ "${_repoName}_Windows" ]) {
+			node(winNodeSpec) {
+				def msbuild = tool winTool
+				def git = tool(name: 'Default', type: 'git')
+				def framework
+				if (frameworkLabel != null) {
+					framework = tool(name: frameworkLabel, type: 'com.cloudbees.jenkins.plugins.customtools.CustomTool')
+				}
 
-			stage('Checkout Win') {
-				checkout scm
+				stage('Checkout Win') {
+					checkout scm
 
-				bat """
-					"${git}" fetch origin
-					"${git}" fetch origin --tags
-					"""
-
-				if (clean) {
 					bat """
-						"${git}" clean -dxf
+						"${git}" fetch origin
+						"${git}" fetch origin --tags
 						"""
-				}
-			}
 
-			if (restorePackages) {
-				stage('Package Restore Win') {
-					echo "Restoring packages"
+					if (clean) {
+						bat """
+							"${git}" clean -dxf
+							"""
+					}
+				}
+
+				if (restorePackages) {
+					stage('Package Restore Win') {
+						echo "Restoring packages"
+						bat """
+							"${msbuild}" /t:Restore /property:Configuration=${_configuration} ${_buildFileName}
+							"""
+					}
+				}
+
+				stage('Build Win') {
+					echo "Building ${_repoName}"
 					bat """
-						"${msbuild}" /t:Restore /property:Configuration=${_configuration} ${_buildFileName}
+						"${msbuild}" /t:Build /property:Configuration=${_configuration} ${_buildFileName}
 						"""
-				}
-			}
 
-			stage('Build Win') {
-				echo "Building ${_repoName}"
-				bat """
-					"${msbuild}" /t:Build /property:Configuration=${_configuration} ${_buildFileName}
-					"""
-
-				if (fileExists("output/${_configuration}/version.txt")) {
-					version = readFile "output/${_configuration}/version.txt"
-					currentBuild.displayName = "${version.trim()}-${env.BUILD_NUMBER}"
-				}
-			}
-
-			stage('Tests Win') {
-				try {
-					echo "Running unit tests"
-					bat """
-						"${msbuild}" /t:TestOnly /property:Configuration=${_configuration} ${_buildFileName}
-						"""
-					currentBuild.result = "SUCCESS"
-				} catch(err) {
-					currentBuild.result = "UNSTABLE"
-				} finally {
-					nunit testResultsPattern: '**/TestResults.xml'
-				}
-			}
-
-			if (currentBuild.result != "UNSTABLE") {
-				stage('Build NuGet Package') {
-					echo "Building nuget package for ${_repoName}"
-					bat """
-						"${msbuild}" /t:Pack /property:Configuration=${_configuration} ${_buildFileName}
-						"""
+					if (fileExists("output/${_configuration}/version.txt")) {
+						version = readFile "output/${_configuration}/version.txt"
+						currentBuild.displayName = "${version.trim()}-${env.BUILD_NUMBER}"
+					}
 				}
 
-				if (uploadNuGet) {
-					stash name: "nuget-packages", includes: nupkgPath
+				stage('Tests Win') {
+					try {
+						echo "Running unit tests"
+						bat """
+							if exist "%TEMP%\\${_repoName}" del /s /f /q "%TEMP%\\${_repoName}"
+							if not exist "%TEMP%\\${_repoName}" mkdir "%TEMP%\\${_repoName}"
+							set TEMP="%TEMP%\\${_repoName}"
+							set TMP="%TEMP%"
+							"${msbuild}" /t:TestOnly /property:Configuration=${_configuration} ${_buildFileName}
+							del /s /f /q "%TEMP%"
+							"""
+						currentBuild.result = "SUCCESS"
+					} catch(err) {
+						currentBuild.result = "UNSTABLE"
+					} finally {
+						nunit testResultsPattern: '**/TestResults.xml'
+					}
+				}
+
+				if (currentBuild.result != "UNSTABLE") {
+					stage('Build NuGet Package') {
+						echo "Building nuget package for ${_repoName}"
+						bat """
+							"${msbuild}" /t:Pack /property:Configuration=${_configuration} ${_buildFileName}
+							"""
+					}
+
+					if (uploadNuGet) {
+						stash name: "nuget-packages", includes: nupkgPath
+					}
 				}
 			}
 		}
@@ -124,54 +131,56 @@ def uploadStagedNugetPackages(String winNodeSpec, String nupkgPath) {
 def getLinuxBuildStage(String linuxNodeSpec, String linuxTool, Boolean clean,
 	String frameworkLabel, Boolean restorePackages) {
 	return {
-		node(linuxNodeSpec) {
-			wrap([$class: 'Xvfb']) {
-				def msbuild = tool linuxTool
-				def git = tool(name: 'Default', type: 'git')
-				def framework
-				if (frameworkLabel != null) {
-					framework = tool(name: frameworkLabel, type: 'com.cloudbees.jenkins.plugins.customtools.CustomTool')
-				}
-
-				stage('Checkout Linux') {
-					checkout scm
-
-					sh "${git} fetch origin"
-
-					sh "${git} fetch origin --tags"
-
-					if (clean) {
-						sh "${git} clean -dxf"
+		throttle([ "${_repoName}_Linux" ]) {
+			node(linuxNodeSpec) {
+				wrap([$class: 'Xvfb']) {
+					def msbuild = tool linuxTool
+					def git = tool(name: 'Default', type: 'git')
+					def framework
+					if (frameworkLabel != null) {
+						framework = tool(name: frameworkLabel, type: 'com.cloudbees.jenkins.plugins.customtools.CustomTool')
 					}
-				}
 
-				if (restorePackages) {
-					stage('Package Restore Linux') {
-						echo "Restoring packages"
+					stage('Checkout Linux') {
+						checkout scm
+
+						sh "${git} fetch origin"
+
+						sh "${git} fetch origin --tags"
+
+						if (clean) {
+							sh "${git} clean -dxf"
+						}
+					}
+
+					if (restorePackages) {
+						stage('Package Restore Linux') {
+							echo "Restoring packages"
+							sh """#!/bin/bash
+								"${msbuild}" /t:Restore /property:Configuration=${_configuration} ${_buildFileName}
+								"""
+						}
+					}
+
+					stage('Build Linux') {
+						echo "Building ${_buildFileName}"
 						sh """#!/bin/bash
-							"${msbuild}" /t:Restore /property:Configuration=${_configuration} ${_buildFileName}
+							"${msbuild}" /t:Build /property:Configuration=${_configuration} ${_buildFileName}
 							"""
 					}
-				}
 
-				stage('Build Linux') {
-					echo "Building ${_buildFileName}"
-					sh """#!/bin/bash
-						"${msbuild}" /t:Build /property:Configuration=${_configuration} ${_buildFileName}
-						"""
-				}
-
-				stage('Tests Linux') {
-					try {
-						echo "Running unit tests"
-						sh """#!/bin/bash
-							"${msbuild}" /t:TestOnly /property:Configuration=${_configuration} ${_buildFileName}
-							"""
-						currentBuild.result = "SUCCESS"
-					} catch(err) {
-						currentBuild.result = "UNSTABLE"
-					} finally {
-						nunit testResultsPattern: '**/TestResults.xml'
+					stage('Tests Linux') {
+						try {
+							echo "Running unit tests"
+							sh """#!/bin/bash
+								"${msbuild}" /t:TestOnly /property:Configuration=${_configuration} ${_buildFileName}
+								"""
+							currentBuild.result = "SUCCESS"
+						} catch(err) {
+							currentBuild.result = "UNSTABLE"
+						} finally {
+							nunit testResultsPattern: '**/TestResults.xml'
+						}
 					}
 				}
 			}
