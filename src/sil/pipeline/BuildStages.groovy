@@ -69,7 +69,7 @@ def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet, St
 						bat """
 							if exist "%TEMP%\\${_repoName}" del /s /f /q "%TEMP%\\${_repoName}"
 							if not exist "%TEMP%\\${_repoName}" mkdir "%TEMP%\\${_repoName}"
-							set TEMP="%TEMP%\\${_repoName}"
+							set TEMP=%TEMP%\\${_repoName}
 							set TMP=%TEMP%
 							"${msbuild}" /t:TestOnly /property:Configuration=${_configuration} ${buildFileName}
 							del /s /f /q %TEMP%
