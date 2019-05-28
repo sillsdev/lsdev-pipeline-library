@@ -1,5 +1,5 @@
 #!/usr/bin/groovy
-// Copyright (c) 2018 SIL International
+// Copyright (c) 2018-2019 SIL International
 // This software is licensed under the MIT license (http://opensource.org/licenses/MIT)
 
 package sil.pipeline
@@ -21,6 +21,7 @@ def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet, St
 			node(winNodeSpec) {
 				def msbuild = tool winTool
 				def git = tool(name: 'Default', type: 'git')
+				def buildFileName = _buildFileName.replace('/', '\\')
 				def framework
 				if (frameworkLabel != null) {
 					framework = tool(name: frameworkLabel, type: 'com.cloudbees.jenkins.plugins.customtools.CustomTool')
@@ -45,7 +46,7 @@ def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet, St
 					stage('Package Restore Win') {
 						echo "Restoring packages"
 						bat """
-							"${msbuild}" /t:Restore /property:Configuration=${_configuration} ${_buildFileName}
+							"${msbuild}" /t:Restore /property:Configuration=${_configuration} ${buildFileName}
 							"""
 					}
 				}
@@ -53,7 +54,7 @@ def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet, St
 				stage('Build Win') {
 					echo "Building ${_repoName}"
 					bat """
-						"${msbuild}" /t:Build /property:Configuration=${_configuration} ${_buildFileName}
+						"${msbuild}" /t:Build /property:Configuration=${_configuration} ${buildFileName}
 						"""
 
 					if (fileExists("output/${_configuration}/version.txt")) {
@@ -70,7 +71,7 @@ def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet, St
 							if not exist "%TEMP%\\${_repoName}" mkdir "%TEMP%\\${_repoName}"
 							set TEMP="%TEMP%\\${_repoName}"
 							set TMP=%TEMP%
-							"${msbuild}" /t:TestOnly /property:Configuration=${_configuration} ${_buildFileName}
+							"${msbuild}" /t:TestOnly /property:Configuration=${_configuration} ${buildFileName}
 							del /s /f /q %TEMP%
 							"""
 						currentBuild.result = "SUCCESS"
@@ -85,7 +86,7 @@ def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet, St
 					stage('Build NuGet Package') {
 						echo "Building nuget package for ${_repoName}"
 						bat """
-							"${msbuild}" /t:Pack /property:Configuration=${_configuration} ${_buildFileName}
+							"${msbuild}" /t:Pack /property:Configuration=${_configuration} ${buildFileName}
 							"""
 					}
 
