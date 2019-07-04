@@ -29,7 +29,7 @@ def call(body) {
 	def uploadNuGet = params.uploadNuGet ?: false
 	def framework = params.framework ?: null
 	def configuration = params.configuration ?: 'Release'
-	def nupkgPath = params.nupkgPath ?: "output/${configuration}/*.nupkg"
+	def nupkgPath = params.nupkgPath ?: "output/${configuration}/*nupkg"
 	def clean = params.clean ?: false
 	def restorePackages = params.restorePackages ?: false
 	def buildFileName = params.buildFileName ?: "build/${repo}.proj"
