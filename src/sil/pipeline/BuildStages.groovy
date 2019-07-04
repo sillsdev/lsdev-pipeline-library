@@ -112,6 +112,8 @@ def uploadStagedNugetPackages(String winNodeSpec, String nupkgPath) {
 				if (!fileExists("build/nuget.exe")) {
 					echo "Download nuget"
 					powershell 'Invoke-WebRequest https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile build/nuget.exe'
+				} else {
+					bat "build\\nuget.exe update -self"
 				}
 				echo "Upload nuget package"
 				try {
