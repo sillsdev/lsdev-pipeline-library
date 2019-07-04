@@ -117,6 +117,8 @@ def uploadStagedNugetPackages(String winNodeSpec, String nupkgPath) {
 				try {
 					withCredentials([string(credentialsId: 'nuget-api-key', variable: 'NuGetApiKey')]) {
 						bat """
+							dir ${nupkgPath.replace('/', '\\')}
+							dir output\\Release\\*.nupkg
 							build\\nuget.exe push -Source https://api.nuget.org/v3/index.json ${nupkgPath.replace('/', '\\')} ${NuGetApiKey}
 							"""
 					}
