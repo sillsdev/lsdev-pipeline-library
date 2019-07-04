@@ -117,12 +117,13 @@ def uploadStagedNugetPackages(String winNodeSpec, String nupkgPath) {
 				try {
 					withCredentials([string(credentialsId: 'nuget-api-key', variable: 'NuGetApiKey')]) {
 						bat """
+							ECHO off
 							FOR %%i IN (${nupkgPath.replace('/', '\\')}) DO (
 								IF NOT "%%~xi" == ".snupkg" (
-									build\\nuget.exe push -Source https://api.nuget.org/v3/index.json %%i ${NuGetApiKey}
+									build\\nuget.exe push -Source https://api.nuget.org/v3/index.json "%%i" ${NuGetApiKey}
 								)
 							)
-							"""
+						"""
 					}
 				} catch (err) {
 					echo "Uploading of nuget package failed (ignored): ${err}"
