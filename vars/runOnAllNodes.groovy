@@ -8,31 +8,31 @@
 import sil.pipeline.Utils
 
 def call(Map params = [:]) {
-	def nodeLabel = params.containsKey('label') ? params.label : null
-	def command = params.containsKey('command') ? params.command : null
+  def nodeLabel = params.containsKey('label') ? params.label : null
+  def command = params.containsKey('command') ? params.command : null
 
-	def tasks = getTasks(nodeLabel, command)
+  def tasks = getTasks(nodeLabel, command)
 
-	ansiColor('xterm') {
-		timestamps {
-			stage('Checkout') {
-				return parallel(tasks)
-			}
-		}
-	}
+  ansiColor('xterm') {
+    timestamps {
+      stage('Checkout') {
+        return parallel(tasks)
+      }
+    }
+  }
 }
 
 private def getTasks(String nodeLabel, String command) {
-	def utils = new Utils()
-	def matchingNodes = utils.getMatchingNodes(nodeLabel, true)
-	def tasks = [:]
-	for (int i = 0; i < matchingNodes.size(); i++) {
-		def thisNode = matchingNodes[i]
-		tasks["task-${thisNode}"] = {
-			node(thisNode) {
-				sh command
-			}
-		}
-	}
-	return tasks
+  def utils = new Utils()
+  def matchingNodes = utils.getMatchingNodes(nodeLabel, true)
+  def tasks = [:]
+  for (int i = 0; i < matchingNodes.size(); i++) {
+    def thisNode = matchingNodes[i]
+    tasks["task-${thisNode}"] = {
+      node(thisNode) {
+        sh command
+      }
+    }
+  }
+  return tasks
 }

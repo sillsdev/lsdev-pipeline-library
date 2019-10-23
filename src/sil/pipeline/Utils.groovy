@@ -6,41 +6,41 @@ package sil.pipeline
 
 @NonCPS
 def getMatchingNodes(String nodeLabel, Boolean excludeOfflineNodes = false) {
-	def matchingNodes = []
-	jenkins.model.Jenkins.instance.nodes.each { n ->
-		if (n.getAssignedLabels().any { x -> x.getExpression().equals(nodeLabel) } &&
-			(!excludeOfflineNodes || n.getComputer().isOnline())) {
-			matchingNodes.add(n.getDisplayName())
-		}
-	}
-	return matchingNodes
+  def matchingNodes = []
+  jenkins.model.Jenkins.instance.nodes.each { n ->
+    if (n.getAssignedLabels().any { x -> x.getExpression().equals(nodeLabel) } &&
+      (!excludeOfflineNodes || n.getComputer().isOnline())) {
+      matchingNodes.add(n.getDisplayName())
+    }
+  }
+  return matchingNodes
 }
 
 def getBranch() {
-	def branchName = scm.getBranches()[0].getName()
-	return branchName.lastIndexOf('/') > 0 ? branchName.substring(branchName.lastIndexOf('/') + 1) : branchName
+  def branchName = scm.getBranches()[0].getName()
+  return branchName.lastIndexOf('/') > 0 ? branchName.substring(branchName.lastIndexOf('/') + 1) : branchName
 }
 
 String getRepoName() {
-	return scm.getUserRemoteConfigs()[0].getUrl().tokenize('/').last() - '.git'
+  return scm.getUserRemoteConfigs()[0].getUrl().tokenize('/').last() - '.git'
 }
 
 def isPullRequest() {
-	return getBranch().startsWith("PR-")
+  return getBranch().startsWith("PR-")
 }
 
 // Returns true if any file exists that matches the file specification `spec`.
 // Contrary to `fileExists`, this method can contain wildcards in the file spec.
 def anyFileExists(spec) {
-	if (spec.indexOf('*') < 0) {
-		return fileExists(spec)
-	}
+  if (spec.indexOf('*') < 0) {
+    return fileExists(spec)
+  }
 
-	def beforeWildcard = spec.substring(0, spec.indexOf('*'))
-	def basedir = beforeWildcard.substring(0, beforeWildcard.lastIndexOf('/'))
-	def pattern = spec.substring(basedir.length() + 1)
+  def beforeWildcard = spec.substring(0, spec.indexOf('*'))
+  def basedir = beforeWildcard.substring(0, beforeWildcard.lastIndexOf('/'))
+  def pattern = spec.substring(basedir.length() + 1)
 
-	return new FileNameFinder().getFileNames(basedir, pattern).size() > 0
+  return new FileNameFinder().getFileNames(basedir, pattern).size() > 0
 }
 
 def downloadFile(address, filePath) {

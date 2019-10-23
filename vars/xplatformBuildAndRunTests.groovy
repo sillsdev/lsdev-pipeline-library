@@ -12,56 +12,56 @@ import sil.pipeline.BuildStages
 import sil.pipeline.Utils
 
 def call(body) {
-	// evaluate the body block, and collect configuration into the object
-	def params = [:]
-	body.resolveStrategy = Closure.DELEGATE_FIRST
-	body.delegate = params
-	body()
+  // evaluate the body block, and collect configuration into the object
+  def params = [:]
+  body.resolveStrategy = Closure.DELEGATE_FIRST
+  body.delegate = params
+  body()
 
-	def utils = new Utils()
-	def buildStages = new BuildStages()
-	def repo = utils.getRepoName()
+  def utils = new Utils()
+  def buildStages = new BuildStages()
+  def repo = utils.getRepoName()
 
-	def winNodeSpec = params.winNodeSpec ?: 'windows'
-	def winTool = params.winTool ?: 'msbuild'
-	def linuxNodeSpec = params.linuxNodeSpec ?: 'linux'
-	def linuxTool = params.linuxTool ?: 'xbuild'
-	def uploadNuGet = params.uploadNuGet ?: false
-	def framework = params.framework ?: null
-	def configuration = params.configuration ?: 'Release'
-	def nupkgPath = params.nupkgPath ?: "output/${configuration}/*nupkg"
-	def clean = params.clean ?: false
-	def restorePackages = params.restorePackages ?: false
-	def buildFileName = params.buildFileName ?: "build/${repo}.proj"
+  def winNodeSpec = params.winNodeSpec ?: 'windows'
+  def winTool = params.winTool ?: 'msbuild'
+  def linuxNodeSpec = params.linuxNodeSpec ?: 'linux'
+  def linuxTool = params.linuxTool ?: 'xbuild'
+  def uploadNuGet = params.uploadNuGet ?: false
+  def framework = params.framework ?: null
+  def configuration = params.configuration ?: 'Release'
+  def nupkgPath = params.nupkgPath ?: "output/${configuration}/*nupkg"
+  def clean = params.clean ?: false
+  def restorePackages = params.restorePackages ?: false
+  def buildFileName = params.buildFileName ?: "build/${repo}.proj"
 
-	buildStages.initialize(repo, buildFileName, configuration)
+  buildStages.initialize(repo, buildFileName, configuration)
 
-	Map tasks = [failFast: true]
+  Map tasks = [failFast: true]
 
-	tasks['Windows'] = buildStages.getWinBuildStage(winNodeSpec, winTool, uploadNuGet, nupkgPath,
-		clean, framework, restorePackages)
-	tasks['Linux'] = buildStages.getLinuxBuildStage(linuxNodeSpec, linuxTool, clean, framework,
-		restorePackages)
+  tasks['Windows'] = buildStages.getWinBuildStage(winNodeSpec, winTool, uploadNuGet, nupkgPath,
+    clean, framework, restorePackages)
+  tasks['Linux'] = buildStages.getLinuxBuildStage(linuxNodeSpec, linuxTool, clean, framework,
+    restorePackages)
 
-	ansiColor('xterm') {
-		timestamps {
-			properties([
-				[$class: 'GithubProjectProperty', displayName: '', projectUrlStr: "https://github.com/sillsdev/${repo}"],
-				// Trigger on GitHub push
-				pipelineTriggers([[$class: 'GitHubPushTrigger']])
-			])
-			timeout(time: 60, unit: 'MINUTES') {
-				try {
-					parallel(tasks)
-				} catch(error) {
-					currentBuild.result = "FAILED"
-					throw error
-				}
+  ansiColor('xterm') {
+    timestamps {
+      properties([
+        [$class: 'GithubProjectProperty', displayName: '', projectUrlStr: "https://github.com/sillsdev/${repo}"],
+        // Trigger on GitHub push
+        pipelineTriggers([[$class: 'GitHubPushTrigger']])
+      ])
+      timeout(time: 60, unit: 'MINUTES') {
+        try {
+          parallel(tasks)
+        } catch(error) {
+          currentBuild.result = "FAILED"
+          throw error
+        }
 
-				if (uploadNuGet && currentBuild.result != "UNSTABLE" && currentBuild.result != "FAILED") {
-					buildStages.uploadStagedNugetPackages(winNodeSpec, nupkgPath)
-				}
-			}
-		}
-	}
+        if (uploadNuGet && currentBuild.result != "UNSTABLE" && currentBuild.result != "FAILED") {
+          buildStages.uploadStagedNugetPackages(winNodeSpec, nupkgPath)
+        }
+      }
+    }
+  }
 }
