@@ -1,5 +1,5 @@
 #!/usr/bin/groovy
-// Copyright (c) 2018 SIL International
+// Copyright (c) 2018-2019 SIL International
 // This software is licensed under the MIT license (http://opensource.org/licenses/MIT)
 
 package sil.pipeline
@@ -47,6 +47,15 @@ def downloadFile(address, filePath) {
   new File(filePath).withOutputStream { out ->
     out << new URL(address).openStream()
   }
+}
+
+def getUserTriggeringBuild() {
+  userCause=currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause')
+  return userCause ? userCause.userId : ''
+}
+
+def isManuallyTriggered() {
+  return currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause') != null
 }
 
 return this
