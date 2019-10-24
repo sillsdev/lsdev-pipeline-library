@@ -16,7 +16,7 @@ def getMatchingNodes(String nodeLabel, Boolean excludeOfflineNodes = false) {
   return matchingNodes
 }
 
-def getBranch() {
+String getBranch() {
   def branchName = scm.getBranches()[0].getName()
   return branchName.lastIndexOf('/') > 0 ? branchName.substring(branchName.lastIndexOf('/') + 1) : branchName
 }
@@ -25,7 +25,7 @@ String getRepoName() {
   return scm.getUserRemoteConfigs()[0].getUrl().tokenize('/').last() - '.git'
 }
 
-def isPullRequest() {
+Boolean isPullRequest() {
   return getBranch().startsWith("PR-")
 }
 
@@ -49,12 +49,12 @@ def downloadFile(address, filePath) {
   }
 }
 
-def getUserTriggeringBuild() {
+String getUserTriggeringBuild() {
   userCause=currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause')
   return userCause ? userCause.userId : ''
 }
 
-def isManuallyTriggered() {
+Boolean isManuallyTriggered() {
   return currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause') != null
 }
 
