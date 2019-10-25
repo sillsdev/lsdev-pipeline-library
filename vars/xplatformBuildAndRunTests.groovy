@@ -9,6 +9,7 @@
 // done in `vars/*.groovy`, and only in a call method."
 
 import sil.pipeline.BuildStages
+import sil.pipeline.GitHub
 import sil.pipeline.Utils
 
 def call(body) {
@@ -18,6 +19,7 @@ def call(body) {
   body.delegate = params
   body()
 
+  def gitHub = new GitHub()
   def utils = new Utils()
   def buildStages = new BuildStages()
   def repo = utils.getRepoName()
@@ -43,6 +45,12 @@ def call(body) {
   tasks['Linux'] = buildStages.getLinuxBuildStage(linuxNodeSpec, linuxTool, clean, framework,
     restorePackages)
 
+  if (gitHub.isPRBuild() && !utils.isManuallyTriggered() && !gitHub.isPRFromTrustedUser()) {
+    // ask for permission to build PR from this untrusted user
+    pullRequest.comment('A team member has to approve this pull request on the CI server before it can be built...')
+    input(message: "Build ${env.BRANCH_NAME} from ${env.CHANGE_AUTHOR} (${env.CHANGE_URL})?")
+  }
+
   ansiColor('xterm') {
     timestamps {
       properties([
@@ -50,6 +58,7 @@ def call(body) {
         // Trigger on GitHub push
         pipelineTriggers([[$class: 'GitHubPushTrigger']])
       ])
+
       timeout(time: 60, unit: 'MINUTES') {
         try {
           parallel(tasks)
