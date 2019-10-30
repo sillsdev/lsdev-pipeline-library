@@ -29,7 +29,7 @@ def call(Map params = [:]) {
 					  string(name: "ArchesToPackage", defaultValue: arches_tobuild, description:
 						"The architectures to build packages for (separated by space)"),
 					  choice(name: 'PackageBuildKind', choices: ['Nightly', 'ReleaseCandidate', 'Release'], description: 'What kind of build is this? A nightly build will have a version suffix like +nightly2019... appended, a release (or a release candidate) will just have the version number.')
-          ])
+          ]),
           // Trigger on GitHub push
           pipelineTriggers([[$class: 'GitHubPushTrigger']])
         ])
