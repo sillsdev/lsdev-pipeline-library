@@ -49,7 +49,7 @@ def call(body) {
         node('packager') {
           stage('checkout source') {
             checkout scm
-            stash name: 'sourcetree', includes: 'linux/*,resources/*,common/*'
+            stash name: 'sourcetree', includes: 'linux/,resources/,common/'
           }
         }
 
