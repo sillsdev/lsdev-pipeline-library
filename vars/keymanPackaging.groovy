@@ -13,11 +13,15 @@ def call(Map params = [:]) {
   def gitHub = new GitHub()
   def utils = new Utils()
 
+  echo '#1'
+
   if (gitHub.isPRBuild() && !utils.isManuallyTriggered() && !gitHub.isPRFromTrustedUser()) {
     // ask for permission to build PR from this untrusted user
     pullRequest.comment('A team member has to approve this pull request on the CI server before it can be built...')
     input(message: "Build ${env.BRANCH_NAME} from ${env.CHANGE_AUTHOR} (${env.CHANGE_URL})?")
   }
+
+  echo '#2'
 
   ansiColor('xterm') {
     timestamps {
@@ -34,6 +38,7 @@ def call(Map params = [:]) {
           pipelineTriggers([[$class: 'GitHubPushTrigger']])
         ])
 
+        echo '#3'
         node('packager') {
           stage('checkout source') {
             checkout scm
@@ -41,6 +46,7 @@ def call(Map params = [:]) {
           }
         }
 
+        echo '#4'
         def extraBuildArgs = gitHub.isPRBuild() ? '--no-upload' : ''
 
         // temporary hack while testing pipelines - don't upload package:
@@ -125,8 +131,10 @@ cd ${subDirName}
           } /* tasks */
         } /* for */
 
+        echo '#5'
         parallel tasks
       } /* timeout */
     } /* timestamps */
   } /* ansicolor */
+  echo '#6'
 }
