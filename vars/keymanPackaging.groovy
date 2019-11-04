@@ -6,12 +6,19 @@ import sil.pipeline.GitHub
 import sil.pipeline.Utils
 
 def supportedDistros = 'xenial bionic'
-def defaultDistrosToPackage = supportedDistros
-def arches_tobuild = 'amd64 i386'
 
-def call(Map params = [:]) {
+def call(body) {
+  // evaluate the body block, and collect configuration into the object
+  def params = [:]
+  body.resolveStrategy = Closure.DELEGATE_FIRST
+  body.delegate = params
+  body()
+
   def gitHub = new GitHub()
   def utils = new Utils()
+
+  def distributionsToPackage = params.distributionsToPackage ?: 'xenial bionic'
+  def arches = params.arches ?: 'amd64 i386'
 
   echo '#1'
 
@@ -25,14 +32,14 @@ def call(Map params = [:]) {
 
   ansiColor('xterm') {
     timestamps {
-      timeout(time: 60, unit: 'MINUTES', activitiy: true) {
+      timeout(time: 60, unit: 'MINUTES', activity: true) {
         properties([
           [$class: 'GithubProjectProperty', displayName: '', projectUrlStr: "https://github.com/keymanapp/keyman"],
           parameters([
-            string(name: 'DistributionsToPackage', defaultValue: defaultDistrosToPackage, description: 'The distributions to build packages for (separated by space)', trim: false),
-					  string(name: "ArchesToPackage", defaultValue: arches_tobuild, description:
-						"The architectures to build packages for (separated by space)"),
-					  choice(name: 'PackageBuildKind', choices: ['Nightly', 'ReleaseCandidate', 'Release'], description: 'What kind of build is this? A nightly build will have a version suffix like +nightly2019... appended, a release (or a release candidate) will just have the version number.')
+            string(name: 'DistributionsToPackage', defaultValue: distributionsToPackage, description: 'The distributions to build packages for (separated by space)', trim: false),
+            string(name: "ArchesToPackage", defaultValue: arches, description:
+            "The architectures to build packages for (separated by space)"),
+            choice(name: 'PackageBuildKind', choices: ['Nightly', 'ReleaseCandidate', 'Release'], description: 'What kind of build is this? A nightly build will have a version suffix like +nightly2019... appended, a release (or a release candidate) will just have the version number.')
           ]),
           // Trigger on GitHub push
           pipelineTriggers([[$class: 'GitHubPushTrigger']])
@@ -105,9 +112,9 @@ exit \$buildret
               stage("building ${packageName}") {
                 sh """#!/bin/bash
 if [ "\$PackageBuildKind" = "Release" ]; then
-	BUILD_PACKAGE_ARGS="--suite-name main"
+  BUILD_PACKAGE_ARGS="--suite-name main"
 elif [ "\$PackageBuildKind" = "ReleaseCandidate" ]; then
-	BUILD_PACKAGE_ARGS="--suite-name proposed"
+  BUILD_PACKAGE_ARGS="--suite-name proposed"
 fi
 
 case "${packageName}" in
