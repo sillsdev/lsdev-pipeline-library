@@ -49,54 +49,54 @@ def call(Map params = [:]) {
         def tasks = [:]
         for (p in ['keyman-keyboardprocessor', 'kmflcomp', 'libkmfl', 'ibus-kmfl', 'keyman-config', 'ibus-keyman']) {
           // don't inline this!
-          def package = p
+          def packageName = p
 
           def subDirName
-          switch (package) {
+          switch (packageName) {
             case 'keyman-keyboardprocessor':
               subDirName = 'common/engine/keyboardprocessor'
               break
             default:
-              subDirName = "linux/${package}"
+              subDirName = "linux/${packageName}"
               break
           }
 
-          def packageName
+          def fullPackageName
           switch (utils.getBranch()) {
             case 'master':
             default:
-              packageName = "${package}-alpha"
+              fullPackageName = "${packageName}-alpha"
               break
             case 'beta':
-              packageName = "${package}-beta"
+              fullPackageName = "${packageName}-beta"
               break
             case ~/stable.*/:
-              packageName = package
+              fullPackageName = packageName
               break
           }
 
-          tasks["Package build of ${package}"] = {
+          tasks["Package build of ${packageName}"] = {
             node('packager') {
-              stage("making source package for ${packageName}") {
+              stage("making source package for ${fullPackageName}") {
                 unstash name: 'sourcetree'
 
                 sh """#!/bin/bash
 # make source package
 cd linux
-rm -f ${packageName}-packageversion.properties
-./scripts/jenkins.sh ${packageName} \$DEBSIGNKEY
+rm -f ${fullPackageName}-packageversion.properties
+./scripts/jenkins.sh ${fullPackageName} \$DEBSIGNKEY
 buildret="\$?"
 
-if [ "\$buildret" == "0" ]; then echo "PackageVersion=\$(for file in `ls -1 builddebs/${packageName}*_source.build`;do basename \$file _source.build;done|cut -d "_" -f2|cut -d "-" -f1)" > ${packageName}-packageversion.properties; fi
+if [ "\$buildret" == "0" ]; then echo "PackageVersion=\$(for file in `ls -1 builddebs/${fullPackageName}*_source.build`;do basename \$file _source.build;done|cut -d "_" -f2|cut -d "-" -f1)" > ${fullPackageName}-packageversion.properties; fi
 exit \$buildret
 """
               } /* stage */
 
-              if (fileExists("linux/${packageName}-packageversion.properties")) {
-                currentBuild.displayName = readFile "linux/${packageName}-packageversion.properties"
+              if (fileExists("linux/${fullPackageName}-packageversion.properties")) {
+                currentBuild.displayName = readFile "linux/${fullPackageName}-packageversion.properties"
               }
 
-              stage("building ${package}") {
+              stage("building ${packageName}") {
                 sh """#!/bin/bash
 if [ "\$PackageBuildKind" = "Release" ]; then
 	BUILD_PACKAGE_ARGS="--suite-name main"
@@ -104,7 +104,7 @@ elif [ "\$PackageBuildKind" = "ReleaseCandidate" ]; then
 	BUILD_PACKAGE_ARGS="--suite-name proposed"
 fi
 
-case "${package}" in
+case "${packageName}" in
 keyman-keyboardprocessor|ibus-keyman)
   # Don't build these packages on xenial
   build_distros=\${DistributionsToPackage/\{xenial\}/}
@@ -116,7 +116,7 @@ esac
 
 cd ${subDirName}
 
-\$HOME/ci-builder-scripts/bash/build-package --dists "\$DistributionsToPackage" --arches "\$ArchesToPackage" --main-package-name "${packageName}" --supported-distros "${supportedDistros}" --debkeyid \$DEBSIGNKEY --build-in-place \$BUILD_PACKAGE_ARGS ${extraBuildArgs}
+\$HOME/ci-builder-scripts/bash/build-package --dists "\$DistributionsToPackage" --arches "\$ArchesToPackage" --main-package-name "${fullPackageName}" --supported-distros "${supportedDistros}" --debkeyid \$DEBSIGNKEY --build-in-place \$BUILD_PACKAGE_ARGS ${extraBuildArgs}
 """
 
                 archiveArtifacts 'results/*'
