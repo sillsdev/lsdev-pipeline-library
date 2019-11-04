@@ -64,6 +64,8 @@ def call(body) {
           // don't inline this!
           def packageName = p
 
+          echo "#5: processing ${packageName}"
+
           def subDirName
           switch (packageName) {
             case 'keyman-keyboardprocessor':
@@ -91,25 +93,27 @@ def call(body) {
           tasks["Package build of ${packageName}"] = {
             node('packager') {
               stage("making source package for ${fullPackageName}") {
+                echo "Making source package for ${fullPackageName}"
                 unstash name: 'sourcetree'
 
                 sh """#!/bin/bash
 # make source package
 cd linux
-rm -f ${fullPackageName}-packageversion.properties
-./scripts/jenkins.sh ${fullPackageName} \$DEBSIGNKEY
+rm -f ${packageName}-packageversion.properties
+./scripts/jenkins.sh ${packageName} \$DEBSIGNKEY
 buildret="\$?"
 
-if [ "\$buildret" == "0" ]; then echo "PackageVersion=\$(for file in `ls -1 builddebs/${fullPackageName}*_source.build`;do basename \$file _source.build;done|cut -d "_" -f2|cut -d "-" -f1)" > ${fullPackageName}-packageversion.properties; fi
+if [ "\$buildret" == "0" ]; then echo "PackageVersion=\$(for file in `ls -1 builddebs/${packageName}*_source.build`;do basename \$file _source.build;done|cut -d "_" -f2|cut -d "-" -f1)" > ${packageName}-packageversion.properties; fi
 exit \$buildret
 """
               } /* stage */
 
-              if (fileExists("linux/${fullPackageName}-packageversion.properties")) {
-                currentBuild.displayName = readFile "linux/${fullPackageName}-packageversion.properties"
+              if (fileExists("linux/${packageName}-packageversion.properties")) {
+                currentBuild.displayName = readFile "linux/${packageName}-packageversion.properties"
               }
 
               stage("building ${packageName}") {
+                echo "Building ${packageName}"
                 sh """#!/bin/bash
 if [ "\$PackageBuildKind" = "Release" ]; then
   BUILD_PACKAGE_ARGS="--suite-name main"
@@ -138,10 +142,10 @@ cd ${subDirName}
           } /* tasks */
         } /* for */
 
-        echo '#5'
+        echo '#6'
         parallel tasks
       } /* timeout */
     } /* timestamps */
   } /* ansicolor */
-  echo '#6'
+  echo '#7'
 }
