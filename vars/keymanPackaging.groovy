@@ -103,7 +103,7 @@ rm -f ${packageName}-packageversion.properties
 ./scripts/jenkins.sh ${packageName} \$DEBSIGNKEY
 buildret="\$?"
 
-if [ "\$buildret" == "0" ]; then echo "PackageVersion=\$(for file in `ls -1 builddebs/${packageName}*_source.build`;do basename \$file _source.build;done|cut -d "_" -f2|cut -d "-" -f1)" > ${packageName}-packageversion.properties; fi
+if [ "\$buildret" == "0" ]; then echo "\$(for file in `ls -1 builddebs/${packageName}*_source.build`;do basename \$file _source.build;done|cut -d "_" -f2|cut -d "-" -f1)" > ${packageName}-packageversion.properties; fi
 exit \$buildret
 """
               } /* stage */
