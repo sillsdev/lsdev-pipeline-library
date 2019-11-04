@@ -107,7 +107,7 @@ fi
 case "${packageName}" in
 keyman-keyboardprocessor|ibus-keyman)
   # Don't build these packages on xenial
-  build_distros=\${DistributionsToPackage/\{xenial\}/}
+  build_distros=\${DistributionsToPackage/xenial/}
   ;;
 *)
   build_distros=\$DistributionsToPackage
