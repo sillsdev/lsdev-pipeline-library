@@ -75,17 +75,19 @@ private String getRepoURL() {
 
 private String getCommitSha() {
   def commitSha = sh(
-    script: "git rev-parse ${env.CHANGE_BRANCH}",
+    script: "git rev-parse HEAD^1",
     returnStdout: true,
   ).trim()
   return commitSha
 }
 
 void setBuildStatus(String message, String state, String context = 'continuous-integration/jenkins/pr-merge') {
-  sh "git log -5"
+  sh "git log -1 && git log -1 HEAD^ && git log -1 HEAD^2"
   // workaround https://issues.jenkins-ci.org/browse/JENKINS-38674
   repoUrl = getRepoURL()
   commitSha = getCommitSha()
+
+  echo "repoUrl=${repoUrl}, commit=${commitSha}"
 
   step([
       $class: "GitHubCommitStatusSetter",
