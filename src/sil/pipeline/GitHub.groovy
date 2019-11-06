@@ -68,10 +68,11 @@ private def getGHSourceObject(id) {
 void setBuildStatus(String message, String state, String context = 'continuous-integration/jenkins/pr-merge') {
   step([
       $class: "GitHubCommitStatusSetter",
+      reposSource: [$class: "ManuallyEnteredRepositorySource", url: env.GIT_URL],
       contextSource: [$class: "ManuallyEnteredCommitContextSource", context: context],
-      errorHandlers: [[$class: "ChangingBuildStatusErrorHandler", result: "UNSTABLE"]],
+      errorHandlers: [[$class: 'ShallowAnyErrorHandler']],
       statusResultSource: [ $class: "ConditionalStatusResultSource", results: [[$class: "AnyBuildResult", message: message, state: state]] ]
-  ]);
+  ])
 }
 
 return this
