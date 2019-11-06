@@ -27,7 +27,7 @@ def call(body) {
       echo "Skipping PR since it didn't change any Linux-related files"
       return
     }
-  } else if (env.BRANCH_NAME !== 'master') {
+  } else if (env.BRANCH_NAME != 'master') {
     echo "Skipping build on non-master branch ${env.BRANCH_NAME}"
     return
   }
