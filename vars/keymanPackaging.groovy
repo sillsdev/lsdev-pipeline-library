@@ -29,6 +29,7 @@ def call(body) {
 
   echo '#2'
 
+  def exitJob = false
   ansiColor('xterm') {
     timestamps {
       properties([
@@ -44,22 +45,29 @@ def call(body) {
       ])
 
       echo '#3'
-      def exitJob = false
       node('packager') {
         stage('checkout source') {
           checkout scm
           if (gitHub.isPRBuild()) {
-            if (utils.hasMatchingChangedFiles('(linux|common)/.*')) {
+            if (!utils.hasMatchingChangedFiles(pullRequest.files, /(linux|common)\/.*/)) {
               echo "Skipping PR since it didn't change any Linux-related files"
-              gitHub.setBuildStatus("Skipping build since it didn't change any Linux-related files", "SUCCESS")
+              pullRequest.createStatus('success', 'continuous-integration/jenkins/pr-merge', 'Skipping build since it didn\'t change any Linux-related files', env.BUILD_URL)
+              currentBuild.result = 'SUCCESS'
               exitJob = true
-              return;
+              return
             }
             if (!utils.isManuallyTriggered() && !gitHub.isPRFromTrustedUser()) {
               // ask for permission to build PR from this untrusted user
-              gitHub.setBuildStatus('A team member has to approve this pull request on the CI server before it can be built...')
+              pullRequest.createStatus('pending', 'continuous-integration/jenkins/pr-merge', 'A team member has to approve this pull request on the CI server before it can be built...', env.BUILD_URL)
               input(message: "Build ${env.BRANCH_NAME} from ${env.CHANGE_AUTHOR} (${env.CHANGE_URL})?")
             }
+
+            pullRequest.addLabels(['linux'])
+          } else  if (!utils.hasMatchingChangedFiles(pullRequest.files, /(linux|common)\/.*/)) {
+            echo "Skipping build since it didn't change any Linux-related files"
+            currentBuild.result = 'SUCCESS'
+            exitJob = true
+            return
           }
 
           stash name: 'sourcetree', includes: 'linux/,resources/,common/'
@@ -168,5 +176,10 @@ cd ${subDirName}
       } /* timeout */
     } /* timestamps */
   } /* ansicolor */
+
+  if (exitJob) {
+    return
+  }
+
   echo '#7'
 }

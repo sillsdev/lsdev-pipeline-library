@@ -58,15 +58,13 @@ Boolean isManuallyTriggered() {
   return currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause') != null
 }
 
-Boolean hasMatchingChangedFiles(regexString) {
-  def changes = sh(
-    script: "git diff --name-only origin/${env.CHANGE_TARGET} HEAD",
-    returnStdout: true,
-  ).split('\n')
-  for (change in changes) {
-    echo "changed file: ${change}"
+Boolean hasMatchingChangedFiles(files, regexString) {
+  for (commitFile in files) {
+    if (commitFile.filename =~ regexString) {
+      return true
+    }
   }
-  return true
+  return false
 }
 
 return this
