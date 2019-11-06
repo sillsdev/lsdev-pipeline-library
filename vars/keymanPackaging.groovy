@@ -45,13 +45,15 @@ def call(body) {
         ])
 
         echo '#3'
+        def exitJob = false
         node('packager') {
           stage('checkout source') {
             checkout scm
             if (gitHub.isPRBuild()) {
               if (utils.hasMatchingChangedFiles('(linux|common)/.*')) {
                 echo "Skipping PR since it didn't change any Linux-related files"
-                gitHub.setBuildStatus("Skipping build since it didn't change any Linux-related files", "SUCCESS");
+                gitHub.setBuildStatus("Skipping build since it didn't change any Linux-related files", "SUCCESS")
+                exitJob = true
                 return;
               }
               if (!utils.isManuallyTriggered() && !gitHub.isPRFromTrustedUser()) {
@@ -63,6 +65,10 @@ def call(body) {
 
             stash name: 'sourcetree', includes: 'linux/,resources/,common/'
           }
+        }
+
+        if (exitJob) {
+          return
         }
 
         echo '#4'
