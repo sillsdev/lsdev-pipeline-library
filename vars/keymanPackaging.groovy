@@ -51,12 +51,12 @@ def call(body) {
             if (gitHub.isPRBuild()) {
               if (utils.hasMatchingChangedFiles('(linux|common)/.*')) {
                 echo "Skipping PR since it didn't change any Linux-related files"
-                setBuildStatus("Skipping build since it didn't change any Linux-related files", "SUCCESS");
+                gitHub.setBuildStatus("Skipping build since it didn't change any Linux-related files", "SUCCESS");
                 return;
               }
               if (!utils.isManuallyTriggered() && !gitHub.isPRFromTrustedUser()) {
                 // ask for permission to build PR from this untrusted user
-                setBuildStatus('A team member has to approve this pull request on the CI server before it can be built...')
+                gitHub.setBuildStatus('A team member has to approve this pull request on the CI server before it can be built...')
                 input(message: "Build ${env.BRANCH_NAME} from ${env.CHANGE_AUTHOR} (${env.CHANGE_URL})?")
               }
             }
