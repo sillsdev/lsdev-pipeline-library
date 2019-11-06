@@ -49,7 +49,7 @@ def call(body) {
           stage('checkout source') {
             checkout scm
             if (gitHub.isPRBuild()) {
-              if (!utils.hasMatchingChangedFiles('(linux|common)/.*')) {
+              if (utils.hasMatchingChangedFiles('(linux|common)/.*')) {
                 echo "Skipping PR since it didn't change any Linux-related files"
                 setBuildStatus("Skipping build since it didn't change any Linux-related files", "SUCCESS");
                 return;
