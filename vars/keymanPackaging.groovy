@@ -22,20 +22,9 @@ def call(body) {
 
   echo '#1'
 
-  if (gitHub.isPRBuild()) {
-    if (!utils.hasMatchingChangedFiles('(linux|common)/.*')) {
-      echo "Skipping PR since it didn't change any Linux-related files"
-      return
-    }
-  } else if (env.BRANCH_NAME != 'master') {
+  if (!gitHub.isPRBuild() && env.BRANCH_NAME != 'master') {
     echo "Skipping build on non-master branch ${env.BRANCH_NAME}"
     return
-  }
-
-  if (gitHub.isPRBuild() && !utils.isManuallyTriggered() && !gitHub.isPRFromTrustedUser()) {
-    // ask for permission to build PR from this untrusted user
-    pullRequest.comment('A team member has to approve this pull request on the CI server before it can be built...')
-    input(message: "Build ${env.BRANCH_NAME} from ${env.CHANGE_AUTHOR} (${env.CHANGE_URL})?")
   }
 
   echo '#2'
@@ -59,6 +48,19 @@ def call(body) {
         node('packager') {
           stage('checkout source') {
             checkout scm
+            if (gitHub.isPRBuild()) {
+              if (!utils.hasMatchingChangedFiles('(linux|common)/.*')) {
+                echo "Skipping PR since it didn't change any Linux-related files"
+                setBuildStatus("Skipping build since it didn't change any Linux-related files", "SUCCESS");
+                return;
+              }
+              if (!utils.isManuallyTriggered() && !gitHub.isPRFromTrustedUser()) {
+                // ask for permission to build PR from this untrusted user
+                setBuildStatus('A team member has to approve this pull request on the CI server before it can be built...')
+                input(message: "Build ${env.BRANCH_NAME} from ${env.CHANGE_AUTHOR} (${env.CHANGE_URL})?")
+              }
+            }
+
             stash name: 'sourcetree', includes: 'linux/,resources/,common/'
           }
         }
