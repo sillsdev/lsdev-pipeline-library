@@ -5,9 +5,9 @@
 import sil.pipeline.GitHub
 import sil.pipeline.Utils
 
-def supportedDistros = 'xenial bionic'
-
 def call(body) {
+  def supportedDistros = 'xenial bionic'
+
   // evaluate the body block, and collect configuration into the object
   def params = [:]
   body.resolveStrategy = Closure.DELEGATE_FIRST
@@ -21,6 +21,16 @@ def call(body) {
   def arches = params.arches ?: 'amd64 i386'
 
   echo '#1'
+
+  if (gitHub.isPRBuild()) {
+    if (!utils.hasMatchingChangedFiles('(linux|common)/.*')) {
+      echo "Skipping PR since it didn't change any Linux-related files"
+      return
+    }
+  } else if (env.BRANCH_NAME !== 'master') {
+    echo "Skipping build on non-master branch ${env.BRANCH_NAME}"
+    return
+  }
 
   if (gitHub.isPRBuild() && !utils.isManuallyTriggered() && !gitHub.isPRFromTrustedUser()) {
     // ask for permission to build PR from this untrusted user
