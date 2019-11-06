@@ -59,7 +59,10 @@ Boolean isManuallyTriggered() {
 }
 
 Boolean hasMatchingChangedFiles(regexString) {
-  def changes = sh "git diff --name-only origin/${env.CHANGE_TARGET} HEAD".split('\n')
+  def changes = sh(
+    script: "git diff --name-only origin/${env.CHANGE_TARGET} HEAD",
+    returnStdout: true,
+  ).split('\n')
   foreach (change in changes) {
     echo "changed file: ${change}"
   }
