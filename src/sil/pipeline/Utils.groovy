@@ -63,7 +63,7 @@ Boolean hasMatchingChangedFiles(regexString) {
     script: "git diff --name-only origin/${env.CHANGE_TARGET} HEAD",
     returnStdout: true,
   ).split('\n')
-  foreach (change in changes) {
+  for (change in changes) {
     echo "changed file: ${change}"
   }
   return true
