@@ -31,46 +31,46 @@ def call(body) {
 
   ansiColor('xterm') {
     timestamps {
-      timeout(time: 60, unit: 'MINUTES', activity: true) {
-        properties([
-          [$class: 'GithubProjectProperty', displayName: '', projectUrlStr: "https://github.com/keymanapp/keyman"],
-          parameters([
-            string(name: 'DistributionsToPackage', defaultValue: distributionsToPackage, description: 'The distributions to build packages for (separated by space)', trim: false),
-            string(name: "ArchesToPackage", defaultValue: arches, description:
-            "The architectures to build packages for (separated by space)"),
-            choice(name: 'PackageBuildKind', choices: ['Nightly', 'ReleaseCandidate', 'Release'], description: 'What kind of build is this? A nightly build will have a version suffix like +nightly2019... appended, a release (or a release candidate) will just have the version number.')
-          ]),
-          // Trigger on GitHub push
-          pipelineTriggers([[$class: 'GitHubPushTrigger']])
-        ])
+      properties([
+        [$class: 'GithubProjectProperty', displayName: '', projectUrlStr: "https://github.com/keymanapp/keyman"],
+        parameters([
+          string(name: 'DistributionsToPackage', defaultValue: distributionsToPackage, description: 'The distributions to build packages for (separated by space)', trim: false),
+          string(name: "ArchesToPackage", defaultValue: arches, description:
+          "The architectures to build packages for (separated by space)"),
+          choice(name: 'PackageBuildKind', choices: ['Nightly', 'ReleaseCandidate', 'Release'], description: 'What kind of build is this? A nightly build will have a version suffix like +nightly2019... appended, a release (or a release candidate) will just have the version number.')
+        ]),
+        // Trigger on GitHub push
+        pipelineTriggers([[$class: 'GitHubPushTrigger']])
+      ])
 
-        echo '#3'
-        def exitJob = false
-        node('packager') {
-          stage('checkout source') {
-            checkout scm
-            if (gitHub.isPRBuild()) {
-              if (utils.hasMatchingChangedFiles('(linux|common)/.*')) {
-                echo "Skipping PR since it didn't change any Linux-related files"
-                gitHub.setBuildStatus("Skipping build since it didn't change any Linux-related files", "SUCCESS")
-                exitJob = true
-                return;
-              }
-              if (!utils.isManuallyTriggered() && !gitHub.isPRFromTrustedUser()) {
-                // ask for permission to build PR from this untrusted user
-                gitHub.setBuildStatus('A team member has to approve this pull request on the CI server before it can be built...')
-                input(message: "Build ${env.BRANCH_NAME} from ${env.CHANGE_AUTHOR} (${env.CHANGE_URL})?")
-              }
+      echo '#3'
+      def exitJob = false
+      node('packager') {
+        stage('checkout source') {
+          checkout scm
+          if (gitHub.isPRBuild()) {
+            if (utils.hasMatchingChangedFiles('(linux|common)/.*')) {
+              echo "Skipping PR since it didn't change any Linux-related files"
+              gitHub.setBuildStatus("Skipping build since it didn't change any Linux-related files", "SUCCESS")
+              exitJob = true
+              return;
             }
-
-            stash name: 'sourcetree', includes: 'linux/,resources/,common/'
+            if (!utils.isManuallyTriggered() && !gitHub.isPRFromTrustedUser()) {
+              // ask for permission to build PR from this untrusted user
+              gitHub.setBuildStatus('A team member has to approve this pull request on the CI server before it can be built...')
+              input(message: "Build ${env.BRANCH_NAME} from ${env.CHANGE_AUTHOR} (${env.CHANGE_URL})?")
+            }
           }
-        }
 
-        if (exitJob) {
-          return
+          stash name: 'sourcetree', includes: 'linux/,resources/,common/'
         }
+      }
 
+      if (exitJob) {
+        return
+      }
+
+      timeout(time: 60, unit: 'MINUTES', activity: true) {
         echo '#4'
         def extraBuildArgs = gitHub.isPRBuild() ? '--no-upload' : ''
 

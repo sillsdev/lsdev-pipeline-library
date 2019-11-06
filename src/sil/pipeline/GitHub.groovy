@@ -65,10 +65,31 @@ private def getGHSourceObject(id) {
   return null;
 }
 
+private String getRepoURL() {
+  def repoUrl = sh(
+    script: 'git config --get remote.origin.url',
+    returnStdout: true,
+  ).trim()
+  return repoUrl
+}
+
+private String getCommitSha() {
+  def commitSha = sh(
+    script: 'git rev-parse HEAD',
+    returnStdout: true,
+  ).trim()
+  return commitSha
+}
+
 void setBuildStatus(String message, String state, String context = 'continuous-integration/jenkins/pr-merge') {
+  // workaround https://issues.jenkins-ci.org/browse/JENKINS-38674
+  repoUrl = getRepoURL()
+  commitSha = getCommitSha()
+
   step([
       $class: "GitHubCommitStatusSetter",
-      reposSource: [$class: "ManuallyEnteredRepositorySource", url: env.GIT_URL],
+      reposSource: [$class: "ManuallyEnteredRepositorySource", url: repoUrl],
+      commitShaSource: [$class: "ManuallyEnteredShaSource", sha: commitSha],
       contextSource: [$class: "ManuallyEnteredCommitContextSource", context: context],
       errorHandlers: [[$class: 'ShallowAnyErrorHandler']],
       statusResultSource: [ $class: "ConditionalStatusResultSource", results: [[$class: "AnyBuildResult", message: message, state: state]] ]
