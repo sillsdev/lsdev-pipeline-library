@@ -44,6 +44,20 @@ def call(body) {
         pipelineTriggers([[$class: 'GitHubPushTrigger']])
       ])
 
+      def tier
+      switch (utils.getBranch()) {
+        case 'master':
+        default:
+          tier = 'alpha'
+          break
+        case 'beta':
+          tier = 'beta'
+          break
+        case ~/stable.*/:
+          tier = 'stable'
+          break
+      }
+
       echo '#3'
       node('packager') {
         stage('checkout source') {
@@ -68,6 +82,20 @@ def call(body) {
             currentBuild.result = 'SUCCESS'
             exitJob = true
             return
+          }
+
+          node('packager') {
+            currentBuild.displayName = sh(
+              script: """#!/bin/bash
+cd linux
+cp -f VERSION OLDVERSION
+. scripts/version.sh
+TIER=${tier} version > /dev/null
+echo \$newvers > VERSION
+echo \$newvers
+""",
+              returnStdout: true,
+            )
           }
 
           stash name: 'sourcetree', includes: 'linux/,resources/,common/'
@@ -141,7 +169,7 @@ ls -al
 cd linux
 rm -f ${packageName}-packageversion.properties
 ls -al
-./scripts/jenkins.sh ${packageName} \$DEBSIGNKEY
+SKIPVERSION=1 ./scripts/jenkins.sh ${packageName} \$DEBSIGNKEY
 buildret="\$?"
 
 if [ "\$buildret" == "0" ]; then echo "\$(for file in `ls -1 builddebs/${packageName}*_source.build`;do basename \$file _source.build;done|cut -d "_" -f2|cut -d "-" -f1)" > ${packageName}-packageversion.properties; fi
@@ -149,10 +177,6 @@ cat ${packageName}-packageversion.properties
 exit \$buildret
 """
               } /* stage */
-
-              if (fileExists("linux/${packageName}-packageversion.properties")) {
-                currentBuild.displayName = readFile "linux/${packageName}-packageversion.properties"
-              }
 
               stage("building ${packageName}") {
                 echo "Building ${packageName}"
