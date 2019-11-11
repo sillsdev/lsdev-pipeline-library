@@ -22,8 +22,8 @@ def call(body) {
 
   echo '#1'
 
-  if (!gitHub.isPRBuild() && env.BRANCH_NAME != 'master') {
-    echo "Skipping build on non-master branch ${env.BRANCH_NAME}"
+  if (!gitHub.isPRBuild() && env.BRANCH_NAME != 'master' && && env.BRANCH_NAME != 'beta' && env.BRANCH_NAME !=~ /stable/) {
+    echo "Skipping build on non-supported branch ${env.BRANCH_NAME}"
     return
   }
 
