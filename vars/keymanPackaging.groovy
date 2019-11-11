@@ -22,7 +22,7 @@ def call(body) {
 
   echo '#1'
 
-  if (!gitHub.isPRBuild() && env.BRANCH_NAME != 'master' && && env.BRANCH_NAME != 'beta' && env.BRANCH_NAME !=~ /stable/) {
+  if (!gitHub.isPRBuild() && env.BRANCH_NAME != 'master' && env.BRANCH_NAME != 'beta' && env.BRANCH_NAME !=~ /stable/) {
     echo "Skipping build on non-supported branch ${env.BRANCH_NAME}"
     return
   }
@@ -79,6 +79,19 @@ def call(body) {
       }
 
       timeout(time: 60, unit: 'MINUTES', activity: true) {
+        // install dependencies
+        def matchingNodes = utils.getMatchingNodes('packager', true)
+        def dependencyTasks = [:]
+        for (int i = 0; i < matchingNodes.size(); i++) {
+          def thisNode = matchingNodes[i]
+          dependencyTasks["Install dependencies on ${thisNode}"] = {
+            node(thisNode) {
+              sh 'linux/build/agent/install-deps'
+            }
+          }
+        }
+        parallel dependencyTasks
+
         echo '#4'
         def extraBuildArgs = gitHub.isPRBuild() ? '--no-upload' : ''
 
