@@ -64,6 +64,8 @@ def call(body) {
         stage('checkout source') {
           checkout scm
 
+          sh 'git fetch origin --tags'
+
           if (gitHub.isPRBuild()) {
             if (!utils.hasMatchingChangedFiles(pullRequest.files, changedFileRegex)) {
               echo "Skipping PR since it didn't change any Linux-related files"
@@ -86,9 +88,13 @@ def call(body) {
                 def entries = changeLogSets[i].items
                 for (int j = 0; j < entries.length; j++) {
                     def entry = entries[j]
-                    echo entry
                     files = files.plus(new ArrayList(entry.affectedFiles))
                 }
+            }
+
+            echo "Changed files:"
+            for (int i = 0; i < files.size(); i++) {
+              echo "    ${i}: ${files[i].path}"
             }
 
             if (!utils.hasMatchingChangedFiles(files, changedFileRegex)) {
@@ -97,6 +103,8 @@ def call(body) {
               exitJob = true
               return
             }
+          } else {
+            echo "Manually triggered build - skipping check for changed Linux files"
           }
 
           currentBuild.displayName = sh(
@@ -109,7 +117,9 @@ echo \$newvers > VERSION
 echo \$newvers
             """,
             returnStdout: true,
-          )
+          ).trim() + "-${env.BUILD_NUMBER}"
+
+          echo "Setting build name to ${currentBuild.displayName}"
 
           stash name: 'sourcetree', includes: 'linux/,resources/,common/'
         }
@@ -127,6 +137,7 @@ echo \$newvers
           def thisNode = matchingNodes[i]
           dependencyTasks["Install dependencies on ${thisNode}"] = {
             node(thisNode) {
+              unstash name: 'sourcetree'
               sh 'linux/build/agent/install-deps'
             }
           }
@@ -144,7 +155,7 @@ echo \$newvers
           // don't inline this!
           def packageName = p
 
-          echo "#5: processing ${packageName}"
+          echo "#5: processing ${packageName}: branch=${scm.getBranches()[0].getName()}"
 
           def subDirName
           switch (packageName) {
@@ -159,7 +170,6 @@ echo \$newvers
           def fullPackageName
           switch (utils.getBranch()) {
             case 'master':
-            default:
               fullPackageName = "${packageName}-alpha"
               break
             case 'beta':
@@ -168,6 +178,13 @@ echo \$newvers
             case ~/stable.*/:
               fullPackageName = packageName
               break
+            case ~/PR-.*/:
+              fullPackageName = "${packageName}-alpha"
+              break
+            default:
+              echo "Unknown branch ${utils.getBranch()}"
+              currentBuild.result = 'FAILURE'
+              return
           }
 
           tasks["Package build of ${packageName}"] = {
@@ -177,17 +194,8 @@ echo \$newvers
                 unstash name: 'sourcetree'
 
                 sh """#!/bin/bash
-# make source package
-ls -al
 cd linux
-rm -f ${packageName}-packageversion.properties
-ls -al
 SKIPVERSION=1 ./scripts/jenkins.sh ${packageName} \$DEBSIGNKEY
-buildret="\$?"
-
-if [ "\$buildret" == "0" ]; then echo "\$(for file in `ls -1 builddebs/${packageName}*_source.build`;do basename \$file _source.build;done|cut -d "_" -f2|cut -d "-" -f1)" > ${packageName}-packageversion.properties; fi
-cat ${packageName}-packageversion.properties
-exit \$buildret
 """
               } /* stage */
 
@@ -210,9 +218,16 @@ keyman-keyboardprocessor|ibus-keyman)
   ;;
 esac
 
+rm -f ${packageName}-packageversion.properties
+basedir=\$(pwd)
 cd ${subDirName}
 
-\$HOME/ci-builder-scripts/bash/build-package --dists "\$DistributionsToPackage" --arches "\$ArchesToPackage" --main-package-name "${fullPackageName}" --supported-distros "${supportedDistros}" --debkeyid \$DEBSIGNKEY --build-in-place \$BUILD_PACKAGE_ARGS ${extraBuildArgs}
+\$HOME/ci-builder-scripts/bash/build-package --dists "\$build_distros" --arches "\$ArchesToPackage" --main-package-name "${fullPackageName}" --supported-distros "${supportedDistros}" --debkeyid \$DEBSIGNKEY --build-in-place \$BUILD_PACKAGE_ARGS ${extraBuildArgs}
+buildret="\$?"
+
+if [ "\$buildret" == "0" ]; then echo "\$(for file in `ls -1 builddebs/${packageName}*_source.build`;do basename \$file _source.build;done|cut -d "_" -f2|cut -d "-" -f1)" > \$basedir/${packageName}-packageversion.properties; fi
+[ -f \$basedir/${packageName}-packageversion.properties ] && cat \$basedir/${packageName}-packageversion.properties
+exit \$buildret
 """
 
                 archiveArtifacts 'results/*'
@@ -222,6 +237,7 @@ cd ${subDirName}
         } /* for */
 
         echo '#6'
+        tasks.failFast = true
         parallel tasks
       } /* timeout */
     } /* timestamps */
