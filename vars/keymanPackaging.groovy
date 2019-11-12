@@ -59,7 +59,7 @@ def call(body) {
       }
 
       echo '#3'
-      node('packager') {
+      node('master') {
         stage('checkout source') {
           checkout scm
           if (gitHub.isPRBuild()) {
@@ -84,19 +84,17 @@ def call(body) {
             return
           }
 
-          node('packager') {
-            currentBuild.displayName = sh(
-              script: """#!/bin/bash
+          currentBuild.displayName = sh(
+            script: """#!/bin/bash
 cd linux
 cp -f VERSION OLDVERSION
 . scripts/version.sh
 TIER=${tier} version > /dev/null
 echo \$newvers > VERSION
 echo \$newvers
-""",
-              returnStdout: true,
-            )
-          }
+            """,
+            returnStdout: true,
+          )
 
           stash name: 'sourcetree', includes: 'linux/,resources/,common/'
         }
