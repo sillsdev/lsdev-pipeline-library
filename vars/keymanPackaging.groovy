@@ -7,6 +7,7 @@ import sil.pipeline.Utils
 
 def call(body) {
   def supportedDistros = 'xenial bionic'
+  def changedFileRegex = /(linux|common\/engine\/keyboardprocessor)\/.*/
 
   // evaluate the body block, and collect configuration into the object
   def params = [:]
@@ -63,7 +64,7 @@ def call(body) {
         stage('checkout source') {
           checkout scm
           if (gitHub.isPRBuild()) {
-            if (!utils.hasMatchingChangedFiles(pullRequest.files, /(linux|common)\/.*/)) {
+            if (!utils.hasMatchingChangedFiles(pullRequest.files, changedFileRegex)) {
               echo "Skipping PR since it didn't change any Linux-related files"
               pullRequest.createStatus('success', 'continuous-integration/jenkins/pr-merge', 'Skipping build since it didn\'t change any Linux-related files', env.BUILD_URL)
               currentBuild.result = 'SUCCESS'
@@ -77,7 +78,7 @@ def call(body) {
             }
 
             pullRequest.addLabels(['linux'])
-          } else  if (!utils.hasMatchingChangedFiles(pullRequest.files, /(linux|common)\/.*/)) {
+          } else  if (!utils.hasMatchingChangedFiles(pullRequest.files, changedFileRegex)) {
             echo "Skipping build since it didn't change any Linux-related files"
             currentBuild.result = 'SUCCESS'
             exitJob = true
