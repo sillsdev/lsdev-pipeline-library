@@ -1,13 +1,12 @@
 #!/usr/bin/groovy
-// Copyright (c) 2019 SIL International
+// Copyright (c) 2019-2020 SIL International
 // This software is licensed under the MIT license (http://opensource.org/licenses/MIT)
 
 import sil.pipeline.GitHub
 import sil.pipeline.Utils
 
-def packagerNode = 'xpackager'
-
 def call(body) {
+  def packagerNode = 'xpackager'
   def supportedDistros = 'xenial bionic'
   def changedFileRegex = /(linux|common\/engine\/keyboardprocessor)\/.*/
 
