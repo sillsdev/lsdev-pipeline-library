@@ -5,6 +5,8 @@
 import sil.pipeline.GitHub
 import sil.pipeline.Utils
 
+def packagerNode = 'xpackager'
+
 def call(body) {
   def supportedDistros = 'xenial bionic'
   def changedFileRegex = /(linux|common\/engine\/keyboardprocessor)\/.*/
@@ -131,7 +133,7 @@ echo \$newvers
 
       timeout(time: 60, unit: 'MINUTES', activity: true) {
         // install dependencies
-        def matchingNodes = utils.getMatchingNodes('packager', true)
+        def matchingNodes = utils.getMatchingNodes(packagerNode, true)
         def dependencyTasks = [:]
         for (int i = 0; i < matchingNodes.size(); i++) {
           def thisNode = matchingNodes[i]
@@ -188,7 +190,7 @@ echo \$newvers
           }
 
           tasks["Package build of ${packageName}"] = {
-            node('packager') {
+            node(packagerNode) {
               stage("making source package for ${fullPackageName}") {
                 echo "Making source package for ${fullPackageName}"
                 unstash name: 'sourcetree'
