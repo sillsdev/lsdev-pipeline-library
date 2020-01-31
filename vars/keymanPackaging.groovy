@@ -8,7 +8,7 @@ import sil.pipeline.Utils
 def call(body) {
   def packagerNode = 'xpackager'
   def supportedDistros = 'xenial bionic'
-  def changedFileRegex = /(linux|common\/engine\/keyboardprocessor)\/.*/
+  def changedFileRegex = /(linux|common\/engine\/keyboardprocessor)\/.*|TIER.md|VERSION.md/
 
   // evaluate the body block, and collect configuration into the object
   def params = [:]
@@ -24,7 +24,7 @@ def call(body) {
 
   echo '#1'
 
-  if (!gitHub.isPRBuild() && env.BRANCH_NAME != 'master' && env.BRANCH_NAME != 'beta' && env.BRANCH_NAME !=~ /stable/) {
+  if (!gitHub.isPRBuild() && env.BRANCH_NAME != 'master' && env.BRANCH_NAME != 'beta' && env.BRANCH_NAME != 'alpha' && env.BRANCH_NAME !=~ /stable/) {
     echo "Skipping build on non-supported branch ${env.BRANCH_NAME}"
     return
   }
@@ -49,6 +49,7 @@ def call(body) {
       def tier
       switch (utils.getBranch()) {
         case 'master':
+		case 'alpha':
         default:
           tier = 'alpha'
           break
@@ -81,7 +82,7 @@ def call(body) {
               input(message: "Build ${env.BRANCH_NAME} from ${env.CHANGE_AUTHOR} (${env.CHANGE_URL})?")
             }
 
-            pullRequest.addLabels(['linux'])
+            // pullRequest.addLabels(['linux'])
           } else if (!utils.isManuallyTriggered()) {
             def changeLogSets = currentBuild.changeSets
             def files = new ArrayList()
@@ -171,6 +172,7 @@ echo \$newvers
           def fullPackageName
           switch (utils.getBranch()) {
             case 'master':
+			case 'alpha':
               fullPackageName = "${packageName}-alpha"
               break
             case 'beta':
@@ -180,7 +182,7 @@ echo \$newvers
               fullPackageName = packageName
               break
             case ~/PR-.*/:
-              fullPackageName = "${packageName}-alpha"
+              fullPackageName = "${packageName}-alpha-pr"
               break
             default:
               echo "Unknown branch ${utils.getBranch()}"
