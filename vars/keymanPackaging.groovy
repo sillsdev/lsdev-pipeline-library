@@ -49,7 +49,7 @@ def call(body) {
       def tier
       switch (utils.getBranch()) {
         case 'master':
-		case 'alpha':
+    case 'alpha':
         default:
           tier = 'alpha'
           break
@@ -110,20 +110,13 @@ def call(body) {
           }
 
           currentBuild.displayName = sh(
-            script: """#!/bin/bash
-cd linux
-cp -f VERSION OLDVERSION
-. scripts/version.sh
-TIER=${tier} version > /dev/null
-echo \$newvers > VERSION
-echo \$newvers
-            """,
+            script: "cat VERSION.md",
             returnStdout: true,
           ).trim() + "-${env.BUILD_NUMBER}"
 
           echo "Setting build name to ${currentBuild.displayName}"
 
-          stash name: 'sourcetree', includes: 'linux/,resources/,common/'
+          stash name: 'sourcetree', includes: 'linux/,resources/,common/,TIER.md,VERSION.md'
         }
       }
 
@@ -172,7 +165,7 @@ echo \$newvers
           def fullPackageName
           switch (utils.getBranch()) {
             case 'master':
-			case 'alpha':
+            case 'alpha':
               fullPackageName = "${packageName}-alpha"
               break
             case 'beta':
