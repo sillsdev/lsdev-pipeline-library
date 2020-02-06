@@ -6,7 +6,7 @@ import sil.pipeline.GitHub
 import sil.pipeline.Utils
 
 def call(body) {
-  def packagerNode = 'xpackager'
+  def packagerNode = 'packager'
   def supportedDistros = 'xenial bionic'
   def changedFileRegex = /(linux|common\/engine\/keyboardprocessor)\/.*|TIER.md|VERSION.md/
 
