@@ -129,9 +129,6 @@ def call(body) {
 
         def extraBuildArgs = gitHub.isPRBuild() ? '--no-upload' : ''
 
-        // temporary hack while testing pipelines - don't upload package:
-        extraBuildArgs = '--no-upload'
-
         def tasks = [:]
         for (p in ['keyman-keyboardprocessor', 'kmflcomp', 'libkmfl', 'ibus-kmfl', 'keyman-config', 'ibus-keyman']) {
           // don't inline this!
