@@ -2,11 +2,13 @@
 // Copyright (c) 2019-2020 SIL International
 // This software is licensed under the MIT license (http://opensource.org/licenses/MIT)
 
+import org.jenkinsci.plugins.pipeline.modeldefinition.Utils
 import sil.pipeline.GitHub
 import sil.pipeline.Utils
 
 def call(body) {
-  def packagerNode = 'packager && bionic'
+  def sourcePackagerNode = 'packager && bionic'
+  def binaryPackagerNode = 'packager'
   def supportedDistros = 'xenial bionic'
   def changedFileRegex = /(linux|common\/engine\/keyboardprocessor)\/.*|TIER.md|VERSION.md/
 
@@ -22,14 +24,10 @@ def call(body) {
   def distributionsToPackage = params.distributionsToPackage ?: 'xenial bionic'
   def arches = params.arches ?: 'amd64 i386'
 
-  echo '#1'
-
-  if (!gitHub.isPRBuild() && env.BRANCH_NAME != 'master' && env.BRANCH_NAME != 'beta' && env.BRANCH_NAME != 'alpha' && env.BRANCH_NAME !=~ /stable/) {
+  if (!gitHub.isPRBuild() && env.BRANCH_NAME != 'master' && env.BRANCH_NAME != 'beta' && env.BRANCH_NAME !=~ /stable/) {
     echo "Skipping build on non-supported branch ${env.BRANCH_NAME}"
     return
   }
-
-  echo '#2'
 
   def exitJob = false
   ansiColor('xterm') {
@@ -47,21 +45,6 @@ def call(body) {
       ])
 
       def tier
-      switch (utils.getBranch()) {
-        case 'master':
-    case 'alpha':
-        default:
-          tier = 'alpha'
-          break
-        case 'beta':
-          tier = 'beta'
-          break
-        case ~/stable.*/:
-          tier = 'stable'
-          break
-      }
-
-      echo '#3'
       node('master') {
         stage('checkout source') {
           checkout scm
@@ -116,6 +99,11 @@ def call(body) {
 
           echo "Setting build name to ${currentBuild.displayName}"
 
+          tier = sh(
+              script: "cat TIER.md",
+              returnStdout: true,
+            ).trim()
+
           stash name: 'sourcetree', includes: 'linux/,resources/,common/,TIER.md,VERSION.md'
         }
       }
@@ -126,7 +114,7 @@ def call(body) {
 
       timeout(time: 60, unit: 'MINUTES', activity: true) {
         // install dependencies
-        def matchingNodes = utils.getMatchingNodes(packagerNode, true)
+        def matchingNodes = utils.getMatchingNodes(sourcePackagerNode, true)
         def dependencyTasks = [:]
         for (int i = 0; i < matchingNodes.size(); i++) {
           def thisNode = matchingNodes[i]
@@ -139,7 +127,6 @@ def call(body) {
         }
         parallel dependencyTasks
 
-        echo '#4'
         def extraBuildArgs = gitHub.isPRBuild() ? '--no-upload' : ''
 
         // temporary hack while testing pipelines - don't upload package:
@@ -149,8 +136,6 @@ def call(body) {
         for (p in ['keyman-keyboardprocessor', 'kmflcomp', 'libkmfl', 'ibus-kmfl', 'keyman-config', 'ibus-keyman']) {
           // don't inline this!
           def packageName = p
-
-          echo "#5: processing ${packageName}: branch=${scm.getBranches()[0].getName()}"
 
           def subDirName
           switch (packageName) {
@@ -165,17 +150,14 @@ def call(body) {
           def fullPackageName
           switch (utils.getBranch()) {
             case 'master':
-            case 'alpha':
-              fullPackageName = "${packageName}-alpha"
-              break
             case 'beta':
-              fullPackageName = "${packageName}-beta"
+              fullPackageName = "${packageName}-${tier}"
               break
             case ~/stable.*/:
               fullPackageName = packageName
               break
             case ~/PR-.*/:
-              fullPackageName = "${packageName}-alpha-pr"
+              fullPackageName = "${packageName}-${tier}-pr"
               break
             default:
               echo "Unknown branch ${utils.getBranch()}"
@@ -184,55 +166,69 @@ def call(body) {
           }
 
           tasks["Package build of ${packageName}"] = {
-            node(packagerNode) {
+            node(sourcePackagerNode) {
               stage("making source package for ${fullPackageName}") {
                 echo "Making source package for ${fullPackageName}"
                 unstash name: 'sourcetree'
 
                 sh """#!/bin/bash
 cd linux
-SKIPVERSION=1 ./scripts/jenkins.sh ${packageName} \$DEBSIGNKEY
+./scripts/jenkins.sh ${packageName} \$DEBSIGNKEY
 """
+                stash name: "${packageName}-srcpkg", includes: "${subDirName}/${packageName}_*"
               } /* stage */
+            } /* node */
 
-              stage("building ${packageName}") {
-                echo "Building ${packageName}"
-                sh """#!/bin/bash
+            for (d in distributionsToPackage.tokenize()) {
+              for (a in arches.tokenize()) {
+                // don't inline these two lines!
+                def dist = d
+                def arch = a
+
+                node(binaryPackagerNode) {
+                  stage("building ${packageName} (${dist}/${arch})") {
+                    if ((packageName == 'ibus-keyman' || packageName == 'keyman-keyboardprocessor') && dist == 'xenial') {
+                      org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(STAGE_NAME)
+                    } else {
+                      echo "Building ${packageName} (${dist}/${arch})"
+                      unstash name: "${packageName}-srcpkg"
+
+                      def buildResult = sh(
+                        script: """#!/bin/bash
+# Check that we actually want to build this combination!
+echo "dist=${dist}; DistributionsToPackage=\$DistributionsToPackage"
+if [[ "\$DistributionsToPackage" != *${dist}* ]] || [[ "\$ArchesToPackage" != *${arch}* ]]; then
+  echo "Not building ${dist} for ${arch} - not selected"
+  exit 50
+fi
+
 if [ "\$PackageBuildKind" = "Release" ]; then
   BUILD_PACKAGE_ARGS="--suite-name main"
 elif [ "\$PackageBuildKind" = "ReleaseCandidate" ]; then
   BUILD_PACKAGE_ARGS="--suite-name proposed"
 fi
 
-case "${packageName}" in
-keyman-keyboardprocessor|ibus-keyman)
-  # Don't build these packages on xenial
-  build_distros=\${DistributionsToPackage/xenial/}
-  ;;
-*)
-  build_distros=\$DistributionsToPackage
-  ;;
-esac
-
-rm -f ${packageName}-packageversion.properties
 basedir=\$(pwd)
 cd ${subDirName}
 
-\$HOME/ci-builder-scripts/bash/build-package --dists "\$build_distros" --arches "\$ArchesToPackage" --main-package-name "${fullPackageName}" --supported-distros "${supportedDistros}" --debkeyid \$DEBSIGNKEY --build-in-place \$BUILD_PACKAGE_ARGS ${extraBuildArgs}
-buildret="\$?"
+\$HOME/ci-builder-scripts/bash/build-package --dists "${dist}" --arches "${arch}" --main-package-name "${fullPackageName}" --supported-distros "${supportedDistros}" --debkeyid \$DEBSIGNKEY --build-in-place \$BUILD_PACKAGE_ARGS ${extraBuildArgs}
+""",
+                        returnStatus: true)
+                      if (buildResult == 50) {
+                        org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(STAGE_NAME)
+                      } else if (buildResult != 0) {
+                        error "Package build of ${packageName} (${dist}/${arch}) failed"
+                      } else {
+                        archiveArtifacts 'results/*'
+                      }
+                    } /* if/else */
+                  } /* stage */
+                } /* node */
+              } /* tasks */
+            } /* for arch */
+          } /* for dist */
+        } /* for package */
 
-if [ "\$buildret" == "0" ]; then echo "\$(for file in `ls -1 builddebs/${packageName}*_source.build`;do basename \$file _source.build;done|cut -d "_" -f2|cut -d "-" -f1)" > \$basedir/${packageName}-packageversion.properties; fi
-[ -f \$basedir/${packageName}-packageversion.properties ] && cat \$basedir/${packageName}-packageversion.properties
-exit \$buildret
-"""
-
-                archiveArtifacts 'results/*'
-              }
-            }
-          } /* tasks */
-        } /* for */
-
-        echo '#6'
         tasks.failFast = true
         parallel tasks
       } /* timeout */
@@ -242,6 +238,4 @@ exit \$buildret
   if (exitJob) {
     return
   }
-
-  echo '#7'
 }
