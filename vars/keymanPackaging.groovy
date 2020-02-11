@@ -184,7 +184,12 @@ cd linux
 
                 node(binaryPackagerNode) {
                   stage("building ${packageName} (${dist}/${arch})") {
-                    if ((packageName == 'ibus-keyman' || packageName == 'keyman-keyboardprocessor') && dist == 'xenial') {
+                    if ((packageName == 'ibus-keyman' || packageName == 'keyman-keyboardprocessor') && dist == 'xenial' && !gitHub.isPRBuild()) {
+                      // The build should work on all dists, but currently it's failing on xenial.
+                      // If we don't report it, we won't notice it. If we do report it we don't
+                      // get a failed build and so don't get any packages. The compromise is to
+                      // report it on PRs and to ignore it when building master/beta/stable
+                      // branch.
                       org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(STAGE_NAME)
                     } else {
                       echo "Building ${packageName} (${dist}/${arch})"
