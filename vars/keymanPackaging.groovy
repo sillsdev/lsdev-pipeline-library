@@ -219,7 +219,7 @@ cd ${subDirName}
                       if (buildResult == 50) {
                         org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(STAGE_NAME)
                       } else if (buildResult != 0) {
-                        error "Package build of ${packageName} (${dist}/${arch}) failed"
+                        error "Package build of ${packageName} (${dist}/${arch}) failed in the previous step (exit code ${buildResult})"
                       } else {
                         archiveArtifacts 'results/*'
                       }
