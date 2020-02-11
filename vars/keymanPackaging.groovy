@@ -49,7 +49,7 @@ def call(body) {
         stage('checkout source') {
           checkout scm
 
-          sh 'git fetch origin --tags'
+          sh 'git fetch origin --tags && git clean -dxf'
 
           if (gitHub.isPRBuild()) {
             if (!utils.hasMatchingChangedFiles(pullRequest.files, changedFileRegex)) {
@@ -172,7 +172,7 @@ def call(body) {
 cd linux
 ./scripts/jenkins.sh ${packageName} \$DEBSIGNKEY
 """
-                stash name: "${packageName}-srcpkg", includes: "${subDirName}/${packageName}_*"
+                stash name: "${packageName}-srcpkg", includes: "${subDirName}/${packageName}_*, ${subDirName}/debian/"
               } /* stage */
             } /* node */
 
@@ -193,6 +193,9 @@ cd linux
                       org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(STAGE_NAME)
                     } else {
                       echo "Building ${packageName} (${dist}/${arch})"
+
+                      sh 'rm -rf *'
+
                       unstash name: "${packageName}-srcpkg"
 
                       def buildResult = sh(
@@ -221,8 +224,9 @@ cd ${subDirName}
                       } else if (buildResult != 0) {
                         error "Package build of ${packageName} (${dist}/${arch}) failed in the previous step (exit code ${buildResult})"
                       } else {
-                        archiveArtifacts 'results/*'
+                        archiveArtifacts artifacts: 'results/*'
                       }
+                      sh 'rm -rf *'
                     } /* if/else */
                   } /* stage */
                 } /* node */
@@ -236,8 +240,4 @@ cd ${subDirName}
       } /* timeout */
     } /* timestamps */
   } /* ansicolor */
-
-  if (exitJob) {
-    return
-  }
 }
