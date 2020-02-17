@@ -32,17 +32,36 @@ def call(body) {
   def exitJob = false
   ansiColor('xterm') {
     timestamps {
-      properties([
-        [$class: 'GithubProjectProperty', displayName: '', projectUrlStr: "https://github.com/keymanapp/keyman"],
-        parameters([
-          string(name: 'DistributionsToPackage', defaultValue: distributionsToPackage, description: 'The distributions to build packages for (separated by space)', trim: false),
-          string(name: "ArchesToPackage", defaultValue: arches, description:
-          "The architectures to build packages for (separated by space)"),
-          choice(name: 'PackageBuildKind', choices: ['Nightly', 'ReleaseCandidate', 'Release'], description: 'What kind of build is this? A nightly build will have a version suffix like +nightly2019... appended, a release (or a release candidate) will just have the version number.')
-        ]),
-        // Trigger on GitHub push
-        pipelineTriggers([[$class: 'GitHubPushTrigger']])
-      ])
+      withCredentials([string(credentialsId: 'trigger-token', variable: 'TriggerToken')]) {
+        properties([
+          [$class: 'GithubProjectProperty', displayName: '', projectUrlStr: "https://github.com/keymanapp/keyman"],
+          parameters([
+            string(name: 'DistributionsToPackage', defaultValue: distributionsToPackage, description: 'The distributions to build packages for (separated by space)', trim: false),
+            string(name: "ArchesToPackage", defaultValue: arches, description:
+            "The architectures to build packages for (separated by space)"),
+            choice(name: 'PackageBuildKind', choices: ['Nightly', 'ReleaseCandidate', 'Release'], description: 'What kind of build is this? A nightly build will have a version suffix like +nightly2019... appended, a release (or a release candidate) will just have the version number.')
+          ]),
+          pipelineTriggers([
+            // Trigger on GitHub push
+            [$class: 'GitHubPushTrigger'],
+            // Trigger on URL
+            [$class: 'GenericTrigger',
+              genericVariables: [
+                [key: 'project', value: '$.project'],
+                [key: 'branch', value: '$.branch'],
+                [key: 'ref', value: '$.ref'],
+              ],
+              causeString: 'URL triggered on $ref',
+              token: TriggerToken,
+              printContributedVariables: true,
+              printPostContent: true,
+              silentResponse: false,
+              regexpFilterText: '$project',
+              regexpFilterExpression: 'pipeline-keyman-packaging-test/' + BRANCH_NAME
+            ],
+          ])
+        ])
+      }
 
       def tier
 
