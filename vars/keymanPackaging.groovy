@@ -45,6 +45,22 @@ def call(body) {
       ])
 
       def tier
+
+      // set default tier in case TIER.md is missing (currently on beta and stable branch)
+      switch (utils.getBranch()) {
+        case ~/stable.*/:
+          tier = 'stable'
+          break
+        case 'beta':
+          tier = 'beta'
+          break
+        case 'master':
+        case ~/PR-.*/:
+        default:
+          tier = 'alpha'
+          break
+      }
+
       node('master') {
         stage('checkout source') {
           checkout scm
@@ -92,17 +108,26 @@ def call(body) {
             echo "Manually triggered build - skipping check for changed Linux files"
           }
 
-          currentBuild.displayName = sh(
+          def version = sh(
             script: "cat VERSION.md",
             returnStdout: true,
-          ).trim() + "-${env.BUILD_NUMBER}"
+          ).trim()
+          if (!(version ==~ /[0-9]+.+/)) {
+            version = sh(
+              script: "cat resources/VERSION.md",
+              returnStdout: true,
+            ).trim()
+          }
+          currentBuild.displayName = "${version}-${env.BUILD_NUMBER}"
 
           echo "Setting build name to ${currentBuild.displayName}"
 
-          tier = sh(
-              script: "cat TIER.md",
-              returnStdout: true,
-            ).trim()
+          if (fileExists('TIER.md')) {
+            tier = sh(
+                script: "cat TIER.md",
+                returnStdout: true,
+              ).trim()
+          }
 
           stash name: 'sourcetree', includes: 'linux/,resources/,common/,TIER.md,VERSION.md'
         }
