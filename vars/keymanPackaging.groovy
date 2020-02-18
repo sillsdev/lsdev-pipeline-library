@@ -39,7 +39,6 @@ def call(body) {
             string(name: 'DistributionsToPackage', defaultValue: distributionsToPackage, description: 'The distributions to build packages for (separated by space)', trim: false),
             string(name: "ArchesToPackage", defaultValue: arches, description:
             "The architectures to build packages for (separated by space)"),
-            choice(name: 'PackageBuildKind', choices: ['Nightly', 'ReleaseCandidate', 'Release'], description: 'What kind of build is this? A nightly build will have a version suffix like +nightly2019... appended, a release (or a release candidate) will just have the version number.')
           ]),
           pipelineTriggers([
             // Trigger on GitHub push
@@ -49,18 +48,29 @@ def call(body) {
               genericVariables: [
                 [key: 'project', value: '$.project'],
                 [key: 'branch', value: '$.branch'],
-                [key: 'ref', value: '$.ref'],
               ],
-              causeString: 'URL triggered on $ref',
+              causeString: 'URL triggered on $branch',
               token: TriggerToken,
               printContributedVariables: true,
               printPostContent: true,
               silentResponse: false,
               regexpFilterText: '$project',
-              regexpFilterExpression: 'pipeline-keyman-packaging-test/' + BRANCH_NAME
+              regexpFilterExpression: 'pipeline-keyman-packaging-test/' + BRANCH_NAME,
             ],
           ])
         ])
+      }
+
+      // For a new branch it is necessary to build this job at least once so that the
+      // generic trigger (code above) learns to listen for this branch. The multibranch
+      // pipeline job will trigger this build when it detects a new PR. Since we don't
+      // know if the PR contains any relevant code and we shouldn't decide this (it's
+      // done in a script in the Keyman repo that runs on TC), we exit here.
+      // When the TC script triggers a build we will have the project and branch set.
+      if (!utils.isManuallyTriggered() && !env.project && !env.branch) {
+        echo 'Exiting - job is neither triggered manually nor by TC script'
+        exitJob = true
+        return
       }
 
       def tier
@@ -84,7 +94,7 @@ def call(body) {
         stage('checkout source') {
           checkout scm
 
-          sh 'git fetch origin --tags && git clean -dxf'
+          sh 'git fetch -q origin --tags && git clean -dxf'
 
           if (gitHub.isPRBuild()) {
             if (!utils.hasMatchingChangedFiles(pullRequest.files, changedFileRegex)) {
@@ -189,16 +199,23 @@ def call(body) {
           }
 
           def fullPackageName
+          def buildPackageArgs
           switch (utils.getBranch()) {
             case 'master':
+              fullPackageName = "${packageName}-${tier}"
+              buildPackageArgs = '--suite-name experimental'
+              break
             case 'beta':
               fullPackageName = "${packageName}-${tier}"
+              buildPackageArgs = '--suite-name proposed'
               break
             case ~/stable.*/:
               fullPackageName = packageName
+              buildPackageArgs = '--suite-name main'
               break
             case ~/PR-.*/:
               fullPackageName = "${packageName}-${tier}-pr"
+              buildPackageArgs = '--suite-name experimental'
               break
             default:
               echo "Unknown branch ${utils.getBranch()}"
@@ -251,16 +268,10 @@ if [[ "\$DistributionsToPackage" != *${dist}* ]] || [[ "\$ArchesToPackage" != *$
   exit 50
 fi
 
-if [ "\$PackageBuildKind" = "Release" ]; then
-  BUILD_PACKAGE_ARGS="--suite-name main"
-elif [ "\$PackageBuildKind" = "ReleaseCandidate" ]; then
-  BUILD_PACKAGE_ARGS="--suite-name proposed"
-fi
-
 basedir=\$(pwd)
 cd ${subDirName}
 
-\$HOME/ci-builder-scripts/bash/build-package --dists "${dist}" --arches "${arch}" --main-package-name "${fullPackageName}" --supported-distros "${supportedDistros}" --debkeyid \$DEBSIGNKEY --build-in-place \$BUILD_PACKAGE_ARGS ${extraBuildArgs}
+\$HOME/ci-builder-scripts/bash/build-package --dists "${dist}" --arches "${arch}" --main-package-name "${fullPackageName}" --supported-distros "${supportedDistros}" --debkeyid \$DEBSIGNKEY --build-in-place ${buildPackageArgs} ${extraBuildArgs}
 """,
                         returnStatus: true)
                       if (buildResult == 50) {
