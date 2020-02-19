@@ -55,7 +55,7 @@ def call(body) {
               printPostContent: true,
               silentResponse: false,
               regexpFilterText: '$project',
-              regexpFilterExpression: 'pipeline-keyman-packaging-test/' + BRANCH_NAME,
+              regexpFilterExpression: "^pipeline-keyman-packaging/${BRANCH_NAME}\$",
             ],
           ])
         ])
@@ -67,7 +67,7 @@ def call(body) {
       // know if the PR contains any relevant code and we shouldn't decide this (it's
       // done in a script in the Keyman repo that runs on TC), we exit here.
       // When the TC script triggers a build we will have the project and branch set.
-      if (!utils.isManuallyTriggered() && !env.project && !env.branch) {
+      if (!utils.isManuallyTriggered() && (!env.project || !env.branch)) {
         echo 'Exiting - job is neither triggered manually nor by TC script'
         exitJob = true
         return
