@@ -55,12 +55,12 @@ String getUserTriggeringBuild() {
 }
 
 Boolean isManuallyTriggered() {
-  return currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause') != null
+  return currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause') ? true : false
 }
 
 Boolean hasMatchingChangedFiles(files, regexString) {
   for (commitFile in files) {
-    if (commitFile.filename =~ regexString) {
+    if (commitFile.getPath() =~ regexString) {
       return true
     }
   }
