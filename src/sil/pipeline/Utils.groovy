@@ -60,7 +60,7 @@ Boolean isManuallyTriggered() {
 
 Boolean hasMatchingChangedFiles(files, regexString) {
   for (commitFile in files) {
-    if (commitFile.getPath() =~ regexString) {
+    if (commitFile.filename =~ regexString) {
       return true
     }
   }
