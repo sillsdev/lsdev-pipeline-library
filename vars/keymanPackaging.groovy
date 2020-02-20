@@ -167,133 +167,147 @@ def call(body) {
         return
       }
 
-      timeout(time: 60, unit: 'MINUTES', activity: true) {
-        // install dependencies
-        def matchingNodes = utils.getMatchingNodes(sourcePackagerNode, true)
-        def dependencyTasks = [:]
-        for (int i = 0; i < matchingNodes.size(); i++) {
-          def thisNode = matchingNodes[i]
-          dependencyTasks["Install dependencies on ${thisNode}"] = {
-            node(thisNode) {
-              unstash name: 'sourcetree'
-              sh 'linux/build/agent/install-deps'
+      if (gitHub.isPRBuild()) {
+        pullRequest.createStatus('pending', 'continuous-integration/jenkins/pr-merge', 'Build started', env.BUILD_URL)
+      }
+
+      try {
+        timeout(time: 60, unit: 'MINUTES', activity: true) {
+          // install dependencies
+          def matchingNodes = utils.getMatchingNodes(sourcePackagerNode, true)
+          def dependencyTasks = [:]
+          for (int i = 0; i < matchingNodes.size(); i++) {
+            def thisNode = matchingNodes[i]
+            dependencyTasks["Install dependencies on ${thisNode}"] = {
+              node(thisNode) {
+                unstash name: 'sourcetree'
+                sh 'linux/build/agent/install-deps'
+              }
             }
           }
-        }
-        parallel dependencyTasks
+          parallel dependencyTasks
 
-        def extraBuildArgs = gitHub.isPRBuild() ? '--no-upload' : ''
+          def extraBuildArgs = gitHub.isPRBuild() ? '--no-upload' : ''
 
-        def tasks = [:]
-        for (p in ['keyman-keyboardprocessor', 'kmflcomp', 'libkmfl', 'ibus-kmfl', 'keyman-config', 'ibus-keyman']) {
-          // don't inline this!
-          def packageName = p
+          def tasks = [:]
+          for (p in ['keyman-keyboardprocessor', 'kmflcomp', 'libkmfl', 'ibus-kmfl', 'keyman-config', 'ibus-keyman']) {
+            // don't inline this!
+            def packageName = p
 
-          def subDirName
-          switch (packageName) {
-            case 'keyman-keyboardprocessor':
-              subDirName = 'common/engine/keyboardprocessor'
-              break
-            default:
-              subDirName = "linux/${packageName}"
-              break
-          }
+            def subDirName
+            switch (packageName) {
+              case 'keyman-keyboardprocessor':
+                subDirName = 'common/engine/keyboardprocessor'
+                break
+              default:
+                subDirName = "linux/${packageName}"
+                break
+            }
 
-          def fullPackageName
-          def buildPackageArgs
-          switch (utils.getBranch()) {
-            case 'master':
-              fullPackageName = "${packageName}-${tier}"
-              buildPackageArgs = '--suite-name experimental'
-              break
-            case 'beta':
-              fullPackageName = "${packageName}-${tier}"
-              buildPackageArgs = '--suite-name proposed'
-              break
-            case ~/stable.*/:
-              fullPackageName = packageName
-              buildPackageArgs = '--suite-name main'
-              break
-            case ~/PR-.*/:
-              fullPackageName = "${packageName}-${tier}-pr"
-              buildPackageArgs = '--suite-name experimental'
-              break
-            default:
-              echo "Unknown branch ${utils.getBranch()}"
-              currentBuild.result = 'FAILURE'
-              return
-          }
+            def fullPackageName
+            def buildPackageArgs
+            switch (utils.getBranch()) {
+              case 'master':
+                fullPackageName = "${packageName}-${tier}"
+                buildPackageArgs = '--suite-name experimental'
+                break
+              case 'beta':
+                fullPackageName = "${packageName}-${tier}"
+                buildPackageArgs = '--suite-name proposed'
+                break
+              case ~/stable.*/:
+                fullPackageName = packageName
+                buildPackageArgs = '--suite-name main'
+                break
+              case ~/PR-.*/:
+                fullPackageName = "${packageName}-${tier}-pr"
+                buildPackageArgs = '--suite-name experimental'
+                break
+              default:
+                echo "Unknown branch ${utils.getBranch()}"
+                currentBuild.result = 'FAILURE'
+                return
+            }
 
-          tasks["Package build of ${packageName}"] = {
-            node(sourcePackagerNode) {
-              stage("making source package for ${fullPackageName}") {
-                echo "Making source package for ${fullPackageName}"
-                unstash name: 'sourcetree'
+            tasks["Package build of ${packageName}"] = {
+              node(sourcePackagerNode) {
+                stage("making source package for ${fullPackageName}") {
+                  echo "Making source package for ${fullPackageName}"
+                  unstash name: 'sourcetree'
 
-                sh """#!/bin/bash
-cd linux
-./scripts/jenkins.sh ${packageName} \$DEBSIGNKEY
-"""
-                stash name: "${packageName}-srcpkg", includes: "${subDirName}/${packageName}_*, ${subDirName}/debian/"
-              } /* stage */
-            } /* node */
+                  sh """#!/bin/bash
+  cd linux
+  ./scripts/jenkins.sh ${packageName} \$DEBSIGNKEY
+  """
+                  stash name: "${packageName}-srcpkg", includes: "${subDirName}/${packageName}_*, ${subDirName}/debian/"
+                } /* stage */
+              } /* node */
 
-            for (d in distributionsToPackage.tokenize()) {
-              for (a in arches.tokenize()) {
-                // don't inline these two lines!
-                def dist = d
-                def arch = a
+              for (d in distributionsToPackage.tokenize()) {
+                for (a in arches.tokenize()) {
+                  // don't inline these two lines!
+                  def dist = d
+                  def arch = a
 
-                node(binaryPackagerNode) {
-                  stage("building ${packageName} (${dist}/${arch})") {
-                    if ((packageName == 'ibus-keyman' || packageName == 'keyman-keyboardprocessor') && dist == 'xenial' && !gitHub.isPRBuild()) {
-                      // The build should work on all dists, but currently it's failing on xenial.
-                      // If we don't report it, we won't notice it. If we do report it we don't
-                      // get a failed build and so don't get any packages. The compromise is to
-                      // report it on PRs and to ignore it when building master/beta/stable
-                      // branch.
-                      org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(STAGE_NAME)
-                    } else {
-                      echo "Building ${packageName} (${dist}/${arch})"
-
-                      sh 'rm -rf *'
-
-                      unstash name: "${packageName}-srcpkg"
-
-                      def buildResult = sh(
-                        script: """#!/bin/bash
-# Check that we actually want to build this combination!
-echo "dist=${dist}; DistributionsToPackage=\$DistributionsToPackage"
-if [[ "\$DistributionsToPackage" != *${dist}* ]] || [[ "\$ArchesToPackage" != *${arch}* ]]; then
-  echo "Not building ${dist} for ${arch} - not selected"
-  exit 50
-fi
-
-basedir=\$(pwd)
-cd ${subDirName}
-
-\$HOME/ci-builder-scripts/bash/build-package --dists "${dist}" --arches "${arch}" --main-package-name "${fullPackageName}" --supported-distros "${supportedDistros}" --debkeyid \$DEBSIGNKEY --build-in-place ${buildPackageArgs} ${extraBuildArgs}
-""",
-                        returnStatus: true)
-                      if (buildResult == 50) {
+                  node(binaryPackagerNode) {
+                    stage("building ${packageName} (${dist}/${arch})") {
+                      if ((packageName == 'ibus-keyman' || packageName == 'keyman-keyboardprocessor') && dist == 'xenial' && !gitHub.isPRBuild()) {
+                        // The build should work on all dists, but currently it's failing on xenial.
+                        // If we don't report it, we won't notice it. If we do report it we don't
+                        // get a failed build and so don't get any packages. The compromise is to
+                        // report it on PRs and to ignore it when building master/beta/stable
+                        // branch.
                         org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(STAGE_NAME)
-                      } else if (buildResult != 0) {
-                        error "Package build of ${packageName} (${dist}/${arch}) failed in the previous step (exit code ${buildResult})"
                       } else {
-                        archiveArtifacts artifacts: 'results/*'
-                      }
-                      sh 'rm -rf *'
-                    } /* if/else */
-                  } /* stage */
-                } /* node */
-              } /* tasks */
-            } /* for arch */
-          } /* for dist */
-        } /* for package */
+                        echo "Building ${packageName} (${dist}/${arch})"
 
-        tasks.failFast = true
-        parallel tasks
-      } /* timeout */
+                        sh 'rm -rf *'
+
+                        unstash name: "${packageName}-srcpkg"
+
+                        def buildResult = sh(
+                          script: """#!/bin/bash
+  # Check that we actually want to build this combination!
+  echo "dist=${dist}; DistributionsToPackage=\$DistributionsToPackage"
+  if [[ "\$DistributionsToPackage" != *${dist}* ]] || [[ "\$ArchesToPackage" != *${arch}* ]]; then
+    echo "Not building ${dist} for ${arch} - not selected"
+    exit 50
+  fi
+
+  basedir=\$(pwd)
+  cd ${subDirName}
+
+  \$HOME/ci-builder-scripts/bash/build-package --dists "${dist}" --arches "${arch}" --main-package-name "${fullPackageName}" --supported-distros "${supportedDistros}" --debkeyid \$DEBSIGNKEY --build-in-place ${buildPackageArgs} ${extraBuildArgs}
+  """,
+                          returnStatus: true)
+                        if (buildResult == 50) {
+                          org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(STAGE_NAME)
+                        } else if (buildResult != 0) {
+                          error "Package build of ${packageName} (${dist}/${arch}) failed in the previous step (exit code ${buildResult})"
+                        } else {
+                          archiveArtifacts artifacts: 'results/*'
+                        }
+                        sh 'rm -rf *'
+                      } /* if/else */
+                    } /* stage */
+                  } /* node */
+                } /* tasks */
+              } /* for arch */
+            } /* for dist */
+          } /* for package */
+
+          tasks.failFast = true
+          parallel tasks
+        } /* timeout */
+
+        if (gitHub.isPRBuild()) {
+          pullRequest.createStatus('success', 'continuous-integration/jenkins/pr-merge', 'This commit looks good', env.BUILD_URL)
+        }
+      } catch(Exception ex) {
+        if (gitHub.isPRBuild()) {
+          pullRequest.createStatus('failure', 'continuous-integration/jenkins/pr-merge', 'This commit cannot be built', env.BUILD_URL)
+        }
+      }
     } /* timestamps */
   } /* ansicolor */
 }
