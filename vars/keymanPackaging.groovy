@@ -48,6 +48,7 @@ def call(body) {
               genericVariables: [
                 [key: 'project', value: '$.project'],
                 [key: 'branch', value: '$.branch'],
+                [key: 'force', value: '$.force'],
               ],
               causeString: 'URL triggered on $branch',
               token: TriggerToken,
@@ -111,7 +112,7 @@ def call(body) {
             }
 
             // pullRequest.addLabels(['linux'])
-          } else if (!utils.isManuallyTriggered()) {
+          } else if (!utils.isManuallyTriggered() && !env.force) {
             def changeLogSets = currentBuild.changeSets
             def files = new ArrayList()
             for (int i = 0; i < changeLogSets.size(); i++) {
