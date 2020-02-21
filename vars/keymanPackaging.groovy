@@ -304,6 +304,7 @@ def call(body) {
           pullRequest.createStatus('success', 'continuous-integration/jenkins/pr-merge', 'This commit looks good', env.BUILD_URL)
         }
       } catch(Exception ex) {
+        currentBuild.result = 'FAILURE'
         if (gitHub.isPRBuild()) {
           pullRequest.createStatus('failure', 'continuous-integration/jenkins/pr-merge', 'This commit cannot be built', env.BUILD_URL)
         }
