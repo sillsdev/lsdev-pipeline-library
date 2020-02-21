@@ -168,7 +168,7 @@ def call(body) {
       }
 
       if (gitHub.isPRBuild()) {
-        pullRequest.createStatus('pending', 'continuous-integration/jenkins/pr-merge', 'Build started', env.BUILD_URL)
+        pullRequest.createStatus('pending', 'continuous-integration/jenkins/pr-merge', 'Jenkins build started', env.BUILD_URL)
       }
 
       try {
@@ -301,12 +301,12 @@ def call(body) {
         } /* timeout */
 
         if (gitHub.isPRBuild()) {
-          pullRequest.createStatus('success', 'continuous-integration/jenkins/pr-merge', 'This commit looks good', env.BUILD_URL)
+          pullRequest.createStatus('success', 'continuous-integration/jenkins/pr-merge', 'Jenkins build succeeded', env.BUILD_URL)
         }
       } catch(Exception ex) {
         currentBuild.result = 'FAILURE'
         if (gitHub.isPRBuild()) {
-          pullRequest.createStatus('failure', 'continuous-integration/jenkins/pr-merge', 'This commit cannot be built', env.BUILD_URL)
+          pullRequest.createStatus('failure', 'continuous-integration/jenkins/pr-merge', 'Jenkins build failed', env.BUILD_URL)
         }
       }
     } /* timestamps */
