@@ -97,7 +97,7 @@ def call(body) {
 
           sh 'git fetch -q origin --tags && git clean -dxf'
 
-          if (gitHub.isPRBuild()) {
+          if (gitHub.isPRBuild() && !utils.isManuallyTriggered()) {
             if (!utils.hasMatchingChangedFiles(pullRequest.files, changedFileRegex)) {
               echo "Skipping PR since it didn't change any Linux-related files"
               pullRequest.createStatus('success', 'continuous-integration/jenkins/pr-merge', 'Skipping build since it didn\'t change any Linux-related files', env.BUILD_URL)
@@ -105,7 +105,7 @@ def call(body) {
               exitJob = true
               return
             }
-            if (!utils.isManuallyTriggered() && !gitHub.isPRFromTrustedUser()) {
+            if (!gitHub.isPRFromTrustedUser()) {
               // ask for permission to build PR from this untrusted user
               pullRequest.createStatus('pending', 'continuous-integration/jenkins/pr-merge', 'A team member has to approve this pull request on the CI server before it can be built...', env.BUILD_URL)
               input(message: "Build ${env.BRANCH_NAME} from ${env.CHANGE_AUTHOR} (${env.CHANGE_URL})?")
@@ -174,6 +174,9 @@ def call(body) {
       try {
         timeout(time: 60, unit: 'MINUTES', activity: true) {
           // install dependencies
+          // REVIEW: it would be better to use the build-dependencies of the
+          // packages to install the dependencies. That would require maintaining
+          // the dependencies only in one place.
           def matchingNodes = utils.getMatchingNodes(sourcePackagerNode, true)
           def dependencyTasks = [:]
           for (int i = 0; i < matchingNodes.size(); i++) {
@@ -282,6 +285,9 @@ def call(body) {
   """,
                           returnStatus: true)
                         if (buildResult == 50) {
+                          // buildResult 50 means that we don't have to build for this
+                          // architecture (i386) because the architecture is listed as
+                          // 'all' and so gets build when we build for amd64.
                           org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(STAGE_NAME)
                         } else if (buildResult != 0) {
                           error "Package build of ${packageName} (${dist}/${arch}) failed in the previous step (exit code ${buildResult})"
