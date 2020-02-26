@@ -10,7 +10,7 @@ def call(body) {
   def sourcePackagerNode = 'packager && bionic'
   def binaryPackagerNode = 'packager'
   def supportedDistros = 'xenial bionic'
-  def changedFileRegex = /(linux|common\/engine\/keyboardprocessor)\/.*|TIER.md|VERSION.md/
+  def changedFileRegex = /(linux|common\/engine\/keyboardprocessor|common\/core\/desktop)\/.*|TIER.md|VERSION.md/
 
   // evaluate the body block, and collect configuration into the object
   def params = [:]
@@ -197,7 +197,8 @@ def call(body) {
             def subDirName
             switch (packageName) {
               case 'keyman-keyboardprocessor':
-                subDirName = 'common/engine/keyboardprocessor'
+                subDirName = fileExists('common/core/desktop') ?
+                  'common/core/desktop' : 'common/engine/keyboardprocessor'
                 break
               default:
                 subDirName = "linux/${packageName}"
