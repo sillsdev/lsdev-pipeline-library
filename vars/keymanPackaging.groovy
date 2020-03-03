@@ -197,17 +197,6 @@ def call(body) {
             // don't inline this!
             def packageName = p
 
-            def subDirName
-            switch (packageName) {
-              case 'keyman-keyboardprocessor':
-                subDirName = fileExists('common/core/desktop') ?
-                  'common/core/desktop' : 'common/engine/keyboardprocessor'
-                break
-              default:
-                subDirName = "linux/${packageName}"
-                break
-            }
-
             def fullPackageName
             def buildPackageArgs
             switch (utils.getBranch()) {
@@ -238,6 +227,17 @@ def call(body) {
                 stage("making source package for ${fullPackageName}") {
                   echo "Making source package for ${fullPackageName}"
                   unstash name: 'sourcetree'
+
+                  def subDirName
+                  switch (packageName) {
+                    case 'keyman-keyboardprocessor':
+                      subDirName = fileExists('common/core/desktop') ?
+                        'common/core/desktop' : 'common/engine/keyboardprocessor'
+                      break
+                    default:
+                      subDirName = "linux/${packageName}"
+                      break
+                  }
 
                   sh """#!/bin/bash
   cd linux
