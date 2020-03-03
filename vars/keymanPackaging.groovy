@@ -223,12 +223,12 @@ def call(body) {
             }
 
             tasks["Package build of ${packageName}"] = {
+              def subDirName
               node(sourcePackagerNode) {
                 stage("making source package for ${fullPackageName}") {
                   echo "Making source package for ${fullPackageName}"
                   unstash name: 'sourcetree'
 
-                  def subDirName
                   switch (packageName) {
                     case 'keyman-keyboardprocessor':
                       subDirName = fileExists('common/core/desktop') ?
