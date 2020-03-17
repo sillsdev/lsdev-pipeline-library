@@ -22,6 +22,9 @@ def call(body) {
   def gitHub = new GitHub()
   def utils = new Utils()
 
+  def distributionsToPackage = params.distributionsToPackage ?: supportedDistros
+  def arches = params.arches ?: defaultArches
+
   if (!gitHub.isPRBuild() && env.BRANCH_NAME != 'master' && env.BRANCH_NAME != 'beta' && env.BRANCH_NAME !=~ /stable/) {
     echo "Skipping build on non-supported branch ${env.BRANCH_NAME}"
     return
@@ -32,11 +35,10 @@ def call(body) {
     timestamps {
       withCredentials([string(credentialsId: 'trigger-token', variable: 'TriggerToken')]) {
         properties([
-          [$class: 'GithubProjectProperty', displayName: '', projectUrlStr: "https://github.com/keymanapp/keyman"],
+          [$class: 'GithubProjectProperty', displayName: '', projectUrlStr: 'https://github.com/keymanapp/keyman'],
           parameters([
-            string(name: 'DistributionsToPackage', defaultValue: supportedDistros, description: 'The distributions to build packages for (separated by space)', trim: false),
-            string(name: "ArchesToPackage", defaultValue: defaultArches, description:
-            "The architectures to build packages for (separated by space)"),
+            string(name: 'DistributionsToPackage', defaultValue: distributionsToPackage, description: 'The distributions to build packages for (separated by space)', trim: false),
+            string(name: 'ArchesToPackage', defaultValue: arches, description: 'The architectures to build packages for (separated by space)'),
           ]),
           pipelineTriggers([
             // Trigger on GitHub push
@@ -59,9 +61,6 @@ def call(body) {
           ])
         ])
       }
-
-      def distributionsToPackage = params.distributionsToPackage ?: supportedDistros
-      def arches = params.arches ?: defaultArches
 
       // For a new branch it is necessary to build this job at least once so that the
       // generic trigger (code above) learns to listen for this branch. The multibranch
