@@ -11,6 +11,7 @@ def call(body) {
   def binaryPackagerNode = 'packager'
   def supportedDistros = 'xenial bionic focal'
   def changedFileRegex = /(linux|common\/engine\/keyboardprocessor|common\/core\/desktop)\/.*|TIER.md|VERSION.md/
+  def defaultArches = 'amd64 i386'
 
   // evaluate the body block, and collect configuration into the object
   def params = [:]
@@ -20,9 +21,6 @@ def call(body) {
 
   def gitHub = new GitHub()
   def utils = new Utils()
-
-  def distributionsToPackage = params.distributionsToPackage ?: 'xenial bionic'
-  def arches = params.arches ?: 'amd64 i386'
 
   if (!gitHub.isPRBuild() && env.BRANCH_NAME != 'master' && env.BRANCH_NAME != 'beta' && env.BRANCH_NAME !=~ /stable/) {
     echo "Skipping build on non-supported branch ${env.BRANCH_NAME}"
@@ -37,7 +35,7 @@ def call(body) {
           [$class: 'GithubProjectProperty', displayName: '', projectUrlStr: "https://github.com/keymanapp/keyman"],
           parameters([
             string(name: 'DistributionsToPackage', defaultValue: distributionsToPackage, description: 'The distributions to build packages for (separated by space)', trim: false),
-            string(name: "ArchesToPackage", defaultValue: arches, description:
+            string(name: "ArchesToPackage", defaultValue: defaultArches, description:
             "The architectures to build packages for (separated by space)"),
           ]),
           pipelineTriggers([
@@ -61,6 +59,9 @@ def call(body) {
           ])
         ])
       }
+
+      def distributionsToPackage = params.distributionsToPackage ?: supportedDistros
+      def arches = params.arches ?: defaultArches
 
       // For a new branch it is necessary to build this job at least once so that the
       // generic trigger (code above) learns to listen for this branch. The multibranch
@@ -240,9 +241,9 @@ def call(body) {
                   }
 
                   sh """#!/bin/bash
-  cd linux
-  ./scripts/jenkins.sh ${packageName} \$DEBSIGNKEY
-  """
+cd linux
+./scripts/jenkins.sh ${packageName} \$DEBSIGNKEY
+"""
                   stash name: "${packageName}-srcpkg", includes: "${subDirName}/${packageName}_*, ${subDirName}/debian/"
                 } /* stage */
               } /* node */
@@ -271,18 +272,18 @@ def call(body) {
 
                         def buildResult = sh(
                           script: """#!/bin/bash
-  # Check that we actually want to build this combination!
-  echo "dist=${dist}; DistributionsToPackage=\$DistributionsToPackage"
-  if [[ "\$DistributionsToPackage" != *${dist}* ]] || [[ "\$ArchesToPackage" != *${arch}* ]]; then
-    echo "Not building ${dist} for ${arch} - not selected"
-    exit 50
-  fi
+# Check that we actually want to build this combination!
+echo "dist=${dist}; DistributionsToPackage=\$DistributionsToPackage"
+if [[ "\$DistributionsToPackage" != *${dist}* ]] || [[ "\$ArchesToPackage" != *${arch}* ]]; then
+  echo "Not building ${dist} for ${arch} - not selected"
+  exit 50
+fi
 
-  basedir=\$(pwd)
-  cd ${subDirName}
+basedir=\$(pwd)
+cd ${subDirName}
 
-  \$HOME/ci-builder-scripts/bash/build-package --dists "${dist}" --arches "${arch}" --main-package-name "${fullPackageName}" --supported-distros "${supportedDistros}" --debkeyid \$DEBSIGNKEY --build-in-place ${buildPackageArgs} ${extraBuildArgs}
-  """,
+\$HOME/ci-builder-scripts/bash/build-package --dists "${dist}" --arches "${arch}" --main-package-name "${fullPackageName}" --supported-distros "${supportedDistros}" --debkeyid \$DEBSIGNKEY --build-in-place ${buildPackageArgs} ${extraBuildArgs}
+""",
                           returnStatus: true)
                         if (buildResult == 50) {
                           // buildResult 50 means that we don't have to build for this
