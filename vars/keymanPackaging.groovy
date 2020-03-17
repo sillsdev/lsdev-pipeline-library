@@ -34,7 +34,7 @@ def call(body) {
         properties([
           [$class: 'GithubProjectProperty', displayName: '', projectUrlStr: "https://github.com/keymanapp/keyman"],
           parameters([
-            string(name: 'DistributionsToPackage', defaultValue: distributionsToPackage, description: 'The distributions to build packages for (separated by space)', trim: false),
+            string(name: 'DistributionsToPackage', defaultValue: supportedDistros, description: 'The distributions to build packages for (separated by space)', trim: false),
             string(name: "ArchesToPackage", defaultValue: defaultArches, description:
             "The architectures to build packages for (separated by space)"),
           ]),
