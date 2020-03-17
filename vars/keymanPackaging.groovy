@@ -9,7 +9,7 @@ import sil.pipeline.Utils
 def call(body) {
   def sourcePackagerNode = 'packager && bionic'
   def binaryPackagerNode = 'packager'
-  def supportedDistros = 'xenial bionic'
+  def supportedDistros = 'xenial bionic focal'
   def changedFileRegex = /(linux|common\/engine\/keyboardprocessor|common\/core\/desktop)\/.*|TIER.md|VERSION.md/
 
   // evaluate the body block, and collect configuration into the object
