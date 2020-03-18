@@ -40,8 +40,14 @@ private String getRepoName() {
 
 Boolean isMemberOrCollaborator(String changeAuthor, repoName) {
   def ghSource = getGHSourceObject(repoName)
+  if (!ghSource) {
+    // this build is not triggered from GitHub
+    return true;
+  }
 
-  def credentials = Connector.lookupScanCredentials(ghSource.getOwner(), 'https://api.github.com',ghSource.getCredentialsId())
+  def credentials = Connector.lookupScanCredentials(ghSource.getOwner(),
+    'https://api.github.com', ghSource.getCredentialsId())
+
   def github = Connector.connect('https://api.github.com', credentials)
 
   def fullName = ghSource.getRepoOwner() + "/" + ghSource.getRepository()
