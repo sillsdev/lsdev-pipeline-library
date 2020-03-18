@@ -253,6 +253,11 @@ cd linux
                   def dist = d
                   def arch = a
 
+                  if (dist == 'focal' && arch == 'i386') {
+                    // we don't build for 32-bit on focal
+                    continue
+                  }
+
                   node(binaryPackagerNode) {
                     stage("building ${packageName} (${dist}/${arch})") {
                       if ((packageName == 'ibus-keyman' || packageName == 'keyman-keyboardprocessor') && dist == 'xenial') {
