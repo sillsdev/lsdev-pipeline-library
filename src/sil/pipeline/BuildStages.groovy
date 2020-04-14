@@ -21,7 +21,7 @@ def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet, St
       node(winNodeSpec) {
         def msbuild = tool winTool
         def git = tool(name: 'Default', type: 'git')
-        tool(name: 'gitversiontool', type: 'com.cloudbees.jenkins.plugins.customtools.CustomTool')
+        def gitversion = tool(name: 'gitversiontool', type: 'com.cloudbees.jenkins.plugins.customtools.CustomTool')
         def buildFileName = _buildFileName.replace('/', '\\')
         def framework
         if (frameworkLabel != null) {
@@ -42,9 +42,7 @@ def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet, St
               """
           }
 
-          bat """
-            dotnet gitversion
-            """
+          bat "${gitversion}"
         }
 
         if (restorePackages) {
@@ -149,7 +147,7 @@ def getLinuxBuildStage(String linuxNodeSpec, String linuxTool, Boolean clean,
         wrap([$class: 'Xvfb']) {
           def msbuild = tool linuxTool
           def git = tool(name: 'Default', type: 'git')
-          tool(name: 'gitversiontool', type: 'com.cloudbees.jenkins.plugins.customtools.CustomTool')
+          def gitversion = tool(name: 'gitversiontool', type: 'com.cloudbees.jenkins.plugins.customtools.CustomTool')
           def framework
           if (frameworkLabel != null) {
             framework = tool(name: frameworkLabel, type: 'com.cloudbees.jenkins.plugins.customtools.CustomTool')
@@ -166,7 +164,7 @@ def getLinuxBuildStage(String linuxNodeSpec, String linuxTool, Boolean clean,
               sh "${git} clean -dxf"
             }
 
-            sh "dotnet gitversion"
+            sh "${gitversion}"
           }
 
           if (restorePackages) {
