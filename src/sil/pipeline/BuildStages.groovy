@@ -45,7 +45,7 @@ def getWinBuildStage(String winNodeSpec, String winTool, Boolean uploadNuGet, St
           // Workaround for bug in libgit2sharp which causes a crash in GitVersion when local
           // branch doesn't exist yet.
           def gitbash = "C:\\Program Files (x86)\\Git\\git-bash"
-          def cmd = "for i in `git branch -a | grep remote | grep -v HEAD | grep -v master`; do git branch --track \${i#remotes/origin/} \$i 2> /dev/null || true ; done"
+          def cmd = "for i in `git branch -a | grep remote | grep -v HEAD`; do git branch --track \${i#remotes/origin/} \$i 2> /dev/null || true ; done"
           bat """
             "${gitbash}" -c "${cmd}"
             """
@@ -173,7 +173,7 @@ def getLinuxBuildStage(String linuxNodeSpec, String linuxTool, Boolean clean,
 
             // Workaround for bug in libgit2sharp which causes a crash in GitVersion when local
             // branch doesn't exist yet.
-            sh "for i in `${git} branch -a | grep remote | grep -v HEAD | grep -v master`; do ${git} branch --track \${i#remotes/origin/} \$i 2> /dev/null || true ; done"
+            sh "for i in `${git} branch -a | grep remote | grep -v HEAD`; do ${git} branch --track \${i#remotes/origin/} \$i 2> /dev/null || true ; done"
             sh "${gitversion}"
           }
 
