@@ -319,6 +319,10 @@ ls -al
         currentBuild.result = 'FAILURE'
         if (gitHub.isPRBuild()) {
           pullRequest.createStatus('failure', 'continuous-integration/jenkins/pr-merge', 'Jenkins build failed', env.BUILD_URL)
+        } else {
+          mail subject: "[keyman-packaging] Jenkins package build ${env.BUILD_NUMBER} failed",
+            body: "${env.BUILD_URL}",
+            to: 'eb1@sil.org, marc_durdin@sil.org, darcy_wong@sil.org'
         }
       }
     } /* timestamps */
