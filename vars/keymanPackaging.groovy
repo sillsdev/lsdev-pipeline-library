@@ -275,7 +275,7 @@ cd linux
                         unstash name: "${packageName}-srcpkg"
 
                         def buildResult = sh(
-                          script: """#!/bin/bash -x
+                          script: """#!/bin/bash
 # Check that we actually want to build this combination!
 echo "dist=${dist}; DistributionsToPackage=\$DistributionsToPackage"
 if [[ "\$DistributionsToPackage" != *${dist}* ]] || [[ "\$ArchesToPackage" != *${arch}* ]]; then
@@ -285,7 +285,6 @@ fi
 
 basedir=\$(pwd)
 cd ${subDirName}
-ls -al
 
 \$HOME/ci-builder-scripts/bash/build-package --dists "${dist}" --arches "${arch}" --main-package-name "${fullPackageName}" --supported-distros "${supportedDistros}" --debkeyid \$DEBSIGNKEY --build-in-place ${buildPackageArgs} ${extraBuildArgs}
 """,
