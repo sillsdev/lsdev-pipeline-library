@@ -314,12 +314,12 @@ ls -al
         } /* timeout */
 
         if (gitHub.isPRBuild()) {
-          pullRequest.createStatus('success', 'continuous-integration/jenkins/pr-merge', 'Jenkins build succeeded', env.BUILD_URL)
+          pullRequest.createStatus('success', 'Test: Keyman packaging (Linux)', 'Jenkins build succeeded', env.BUILD_URL)
         }
       } catch(Exception ex) {
         currentBuild.result = 'FAILURE'
         if (gitHub.isPRBuild()) {
-          pullRequest.createStatus('failure', 'continuous-integration/jenkins/pr-merge', 'Jenkins build failed', env.BUILD_URL)
+          pullRequest.createStatus('failure', 'Test: Keyman packaging (Linux)', 'Jenkins build failed', env.BUILD_URL)
         } else {
           mail subject: "[keyman-packaging] Jenkins package build ${env.BUILD_NUMBER} failed",
             body: "${env.BUILD_URL}",
