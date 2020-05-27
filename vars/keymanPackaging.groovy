@@ -227,6 +227,7 @@ def call(body) {
               node(sourcePackagerNode) {
                 stage("making source package for ${fullPackageName}") {
                   echo "Making source package for ${fullPackageName}"
+                  sh 'rm -rf *'
                   unstash name: 'sourcetree'
 
                   switch (packageName) {
