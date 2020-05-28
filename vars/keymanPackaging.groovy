@@ -168,7 +168,7 @@ def call(body) {
       }
 
       if (gitHub.isPRBuild()) {
-        pullRequest.createStatus('pending', 'continuous-integration/jenkins/pr-merge', 'Jenkins build started', env.BUILD_URL)
+        pullRequest.createStatus('pending', 'Test: Keyman packaging (Linux)', 'Jenkins build started', env.BUILD_URL)
       }
 
       try {
