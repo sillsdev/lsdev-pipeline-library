@@ -259,23 +259,27 @@ cd linux
                     continue
                   }
 
-                  node(binaryPackagerNode) {
-                    stage("building ${packageName} (${dist}/${arch})") {
-                      if ((packageName == 'ibus-keyman' || packageName == 'keyman-keyboardprocessor') && dist == 'xenial') {
+                  // only build one $dist-$arch package at a time to prevent that we get stale
+                  // package information from llso because a different package just got
+                  // updated that we depend on
+                  lock("keyman-${dist}-${arch}") {
+                    node(binaryPackagerNode) {
+                      stage("building ${packageName} (${dist}/${arch})") {
+                        if ((packageName == 'ibus-keyman' || packageName == 'keyman-keyboardprocessor') && dist == 'xenial') {
 
-                        // The build should work on all dists, but currently it's failing on xenial.
-                        // 2020-03-18 For now we don't build these two packages on Xenial and
-                        // don't report them.
-                        // org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(STAGE_NAME)
-                      } else {
-                        echo "Building ${packageName} (${dist}/${arch})"
+                          // The build should work on all dists, but currently it's failing on xenial.
+                          // 2020-03-18 For now we don't build these two packages on Xenial and
+                          // don't report them.
+                          // org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(STAGE_NAME)
+                        } else {
+                          echo "Building ${packageName} (${dist}/${arch})"
 
-                        sh 'rm -rf *'
+                          sh 'rm -rf *'
 
-                        unstash name: "${packageName}-srcpkg"
+                          unstash name: "${packageName}-srcpkg"
 
-                        def buildResult = sh(
-                          script: """#!/bin/bash
+                          def buildResult = sh(
+                            script: """#!/bin/bash
 # Check that we actually want to build this combination!
 echo "dist=${dist}; DistributionsToPackage=\$DistributionsToPackage"
 if [[ "\$DistributionsToPackage" != *${dist}* ]] || [[ "\$ArchesToPackage" != *${arch}* ]]; then
@@ -288,20 +292,21 @@ cd ${subDirName}
 
 \$HOME/ci-builder-scripts/bash/build-package --dists "${dist}" --arches "${arch}" --main-package-name "${fullPackageName}" --supported-distros "${supportedDistros}" --debkeyid \$DEBSIGNKEY --build-in-place ${buildPackageArgs} ${extraBuildArgs}
 """,
-                          returnStatus: true)
-                        if (buildResult == 50) {
-                          // buildResult 50 means that we don't have to build for this
-                          // architecture (i386) because the architecture is listed as
-                          // 'all' and so gets build when we build for amd64.
-                          org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(STAGE_NAME)
-                        } else if (buildResult != 0) {
-                          error "Package build of ${packageName} (${dist}/${arch}) failed in the previous step (exit code ${buildResult})"
-                        } else {
-                          archiveArtifacts artifacts: 'results/*'
-                        }
-                        sh 'rm -rf *'
-                      } /* if/else */
-                    } /* stage */
+                            returnStatus: true)
+                          if (buildResult == 50) {
+                            // buildResult 50 means that we don't have to build for this
+                            // architecture (i386) because the architecture is listed as
+                            // 'all' and so gets build when we build for amd64.
+                            org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(STAGE_NAME)
+                          } else if (buildResult != 0) {
+                            error "Package build of ${packageName} (${dist}/${arch}) failed in the previous step (exit code ${buildResult})"
+                          } else {
+                            archiveArtifacts artifacts: 'results/*'
+                          }
+                          sh 'rm -rf *'
+                        } /* if/else */
+                      } /* stage */
+                    } /* lock */
                   } /* node */
                 } /* tasks */
               } /* for arch */
