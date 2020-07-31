@@ -45,12 +45,6 @@ def call(body) {
   tasks['Linux'] = buildStages.getLinuxBuildStage(linuxNodeSpec, linuxTool, clean, framework,
     restorePackages)
 
-  if (gitHub.isPRBuild() && !utils.isManuallyTriggered() && !gitHub.isPRFromTrustedUser()) {
-    // ask for permission to build PR from this untrusted user
-    pullRequest.comment('A team member has to approve this pull request on the CI server before it can be built...')
-    input(message: "Build ${env.BRANCH_NAME} from ${env.CHANGE_AUTHOR} (${env.CHANGE_URL})?")
-  }
-
   ansiColor('xterm') {
     timestamps {
       properties([
@@ -59,10 +53,26 @@ def call(body) {
         pipelineTriggers([[$class: 'GitHubPushTrigger']])
       ])
 
+      if (gitHub.isPRBuild() && !utils.isManuallyTriggered() && !gitHub.isPRFromTrustedUser()) {
+        // ask for permission to build PR from this untrusted user
+        pullRequest.createStatus('pending', 'continuous-integration/jenkins/pr-merge', 'A team member has to approve this pull request on the CI server before it can be built...', env.BUILD_URL)
+        input(message: "Build ${env.BRANCH_NAME} from ${env.CHANGE_AUTHOR} (${env.CHANGE_URL})?")
+      }
+
+      if (gitHub.isPRBuild()) {
+        pullRequest.createStatus('pending', 'continuous-integration/jenkins/pr-merge', 'Jenkins build started', env.BUILD_URL)
+      }
+
       timeout(time: 60, unit: 'MINUTES') {
         try {
           parallel(tasks)
+          if (gitHub.isPRBuild()) {
+            pullRequest.createStatus('success', 'continuous-integration/jenkins/pr-merge', 'Jenkins build succeeded', env.BUILD_URL)
+          }
         } catch(error) {
+          if (gitHub.isPRBuild()) {
+            pullRequest.createStatus('failure', 'continuous-integration/jenkins/pr-merge', 'Jenkins build failed', env.BUILD_URL)
+          }
           currentBuild.result = "FAILED"
           throw error
         }
