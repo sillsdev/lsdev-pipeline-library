@@ -330,7 +330,16 @@ cd linux
                     sh """#!/bin/bash
 cd results/
 if ls *${dist}*${arch}.changes > /dev/null 2>&1; then
-  dput -U llso:ubuntu/${dist}-experimental *${dist}*${arch}.changes
+  for pkg in *${dist}*${arch}.changes; do
+    pkgname=\${pkg%%_*}
+    mapfile -t debs < <(dcmd --deb \$pkg)
+
+    if wget --spider http://linux.lsdev.sil.org/ubuntu/pool/main/\${pkgname:0:1}/\${pkgname}/\${debs[0]} 2>/dev/null; then
+      echo "Skipping upload of \${pkg} - already exists"
+    else
+      dput -U llso:ubuntu/${dist}-experimental \${pkg}
+    fi
+  done
 else
   echo "No packages for ${dist}/${arch} to upload"
 fi
