@@ -333,8 +333,14 @@ if ls *${dist}*${arch}.changes > /dev/null 2>&1; then
   for pkg in *${dist}*${arch}.changes; do
     pkgname=\${pkg%%_*}
     mapfile -t debs < <(dcmd --deb \$pkg)
+    if [ "\${pkgname:0:3}" == "lib" ]; then
+      # "libg" and "libk" instead of "l"
+      subdir=\${pkgname:0:4}
+    else
+      subdir=\${pkgname:0:1}
+    fi
 
-    if wget --spider http://linux.lsdev.sil.org/ubuntu/pool/main/\${pkgname:0:1}/\${pkgname}/\${debs[0]} 2>/dev/null; then
+    if wget --spider http://linux.lsdev.sil.org/ubuntu/pool/main/\${subdir}/\${pkgname}/\${debs[0]} 2>/dev/null; then
       echo "Skipping upload of \${pkg} - already exists"
     else
       dput -U llso:ubuntu/${dist}-experimental \${pkg}
