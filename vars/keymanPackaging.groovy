@@ -10,6 +10,7 @@ def call(body) {
   def sourcePackagerNode = 'packager && bionic'
   def binaryPackagerNode = 'packager'
   def supportedDistros = 'xenial bionic focal groovy'
+  def x64OnlyDistros = 'focal groovy'
   def changedFileRegex = /(linux|common\/engine\/keyboardprocessor|common\/core\/desktop)\/.*|TIER.md|VERSION.md/
   def defaultArches = 'amd64 i386'
 
@@ -253,8 +254,8 @@ cd linux
                   def dist = d
                   def arch = a
 
-                  if (dist == 'focal' && arch == 'i386') {
-                    // we don't build for 32-bit on focal
+                  if (arch == 'i386' && x64OnlyDistros.contains(dist)) {
+                    // we don't build for 32-bit on focal and later
                     continue
                   }
 
