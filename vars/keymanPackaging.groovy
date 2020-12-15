@@ -76,19 +76,23 @@ def call(body) {
       }
 
       def tier
+      def repoSuffix
 
       // set default tier in case TIER.md is missing (currently on beta and stable branch)
       switch (utils.getBranch()) {
         case ~/stable.*/:
           tier = 'stable'
+          repoSuffix = ''
           break
         case 'beta':
           tier = 'beta'
+          repoSuffix = '-proposed'
           break
         case 'master':
         case ~/PR-.*/:
         default:
           tier = 'alpha'
+          repoSuffix = '-experimental'
           break
       }
 
@@ -176,7 +180,7 @@ def call(body) {
       try {
         timeout(time: 60, unit: 'MINUTES', activity: true) {
           // install dependencies
-          // REVIEW: it would be better to use the build-dependencies of the
+          // ENHANCE: it would be better to use the build-dependencies of the
           // packages to install the dependencies. That would require maintaining
           // the dependencies only in one place.
           def matchingNodes = utils.getMatchingNodes(sourcePackagerNode, true)
@@ -344,7 +348,7 @@ if ls *${dist}*${arch}.changes > /dev/null 2>&1; then
     if wget --spider http://linux.lsdev.sil.org/ubuntu/pool/main/\${subdir}/\${pkgname}/\${debs[0]} 2>/dev/null; then
       echo "Skipping upload of \${pkg} - already exists"
     else
-      dput -U llso:ubuntu/${dist}-experimental \${pkg}
+      dput -U llso:ubuntu/${dist}${repoSuffix} \${pkg}
     fi
   done
 else
