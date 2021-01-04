@@ -50,6 +50,7 @@ def call(body) {
                 [key: 'project', value: '$.project'],
                 [key: 'branch', value: '$.branch'],
                 [key: 'force', value: '$.force'],
+                [key: 'tag', value: '$.tag'],
               ],
               causeString: 'URL triggered on $branch',
               token: TriggerToken,
@@ -98,7 +99,11 @@ def call(body) {
 
       node('master') {
         stage('checkout source') {
-          checkout scm
+          if (!env.tag) {
+            checkout scm
+          } else {
+            checkout scm: [$class: 'GitSCM', branches: "refs/tags/${env.tag}" ], poll: false
+          }
 
           sh 'git fetch -q origin --tags && git clean -dxf'
 
