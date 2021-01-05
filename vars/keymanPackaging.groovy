@@ -102,7 +102,7 @@ def call(body) {
           if (!env.tag) {
             checkout scm
           } else {
-            checkout scm: [$class: 'GitSCM', branches: "refs/tags/${env.tag}" ], poll: false
+            checkout scm: [$class: 'GitSCM', branches: [ name: "refs/tags/${env.tag}" ], poll: false
           }
 
           sh 'git fetch -q origin --tags && git clean -dxf'
