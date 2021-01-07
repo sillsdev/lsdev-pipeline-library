@@ -1,5 +1,5 @@
 #!/usr/bin/groovy
-// Copyright (c) 2019-2020 SIL International
+// Copyright (c) 2019-2021 SIL International
 // This software is licensed under the MIT license (http://opensource.org/licenses/MIT)
 
 import org.jenkinsci.plugins.pipeline.modeldefinition.Utils
@@ -9,7 +9,7 @@ import sil.pipeline.Utils
 def call(body) {
   def sourcePackagerNode = 'packager && bionic'
   def binaryPackagerNode = 'packager'
-  def supportedDistros = 'xenial bionic focal groovy'
+  def supportedDistros = 'bionic focal groovy'
   def x64OnlyDistros = 'focal groovy'
   def changedFileRegex = /(linux|common\/engine\/keyboardprocessor|common\/core\/desktop)\/.*|TIER.md|VERSION.md/
   def defaultArches = 'amd64 i386'
@@ -270,54 +270,46 @@ cd linux
 
                   node(binaryPackagerNode) {
                     stage("building ${packageName} (${dist}/${arch})") {
-                      if ((packageName == 'ibus-keyman' || packageName == 'keyman-keyboardprocessor') && dist == 'xenial') {
+                      echo "Building ${packageName} (${dist}/${arch})"
 
-                        // The build should work on all dists, but currently it's failing on xenial.
-                        // 2020-03-18 For now we don't build these two packages on Xenial and
-                        // don't report them.
-                        // org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(STAGE_NAME)
-                      } else {
-                        echo "Building ${packageName} (${dist}/${arch})"
+                      retry(3) {
+                        sh 'rm -rf *'
 
-                        retry(3) {
-                          sh 'rm -rf *'
+                        unstash name: "${packageName}-srcpkg"
 
-                          unstash name: "${packageName}-srcpkg"
+                        def buildResult = sh(
+                          script: """#!/bin/bash
+# Check that we actually want to build this combination!
+echo "dist=${dist}; DistributionsToPackage=\$DistributionsToPackage"
+if [[ "\$DistributionsToPackage" != *${dist}* ]] || [[ "\$ArchesToPackage" != *${arch}* ]]; then
+  echo "Not building ${dist} for ${arch} - not selected"
+  exit 50
+fi
 
-                          def buildResult = sh(
-                            script: """#!/bin/bash
-  # Check that we actually want to build this combination!
-  echo "dist=${dist}; DistributionsToPackage=\$DistributionsToPackage"
-  if [[ "\$DistributionsToPackage" != *${dist}* ]] || [[ "\$ArchesToPackage" != *${arch}* ]]; then
-    echo "Not building ${dist} for ${arch} - not selected"
-    exit 50
-  fi
+basedir=\$(pwd)
+cd ${subDirName}
 
-  basedir=\$(pwd)
-  cd ${subDirName}
-
-  \$HOME/ci-builder-scripts/bash/build-package --dists "${dist}" --arches "${arch}" --main-package-name "${fullPackageName}" --supported-distros "${supportedDistros}" --debkeyid \$DEBSIGNKEY --build-in-place --no-upload ${buildPackageArgs}
-  """,
-                            returnStatus: true)
-                          if (buildResult == 50) {
-                            // buildResult 50 means that we don't have to build for this
-                            // architecture (i386) because the architecture is listed as
-                            // 'all' and so gets build when we build for amd64.
-                            org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(STAGE_NAME)
-                          } else if (buildResult != 0) {
-                            error "Package build of ${packageName} (${dist}/${arch}) failed in the previous step (exit code ${buildResult})"
-                          } else {
-                            if (!gitHub.isPRBuild()) {
-                              lock('packages') {
-                                unstash name: 'packages'
-                                stash name: 'packages', includes: 'results/*'
-                              }
+\$HOME/ci-builder-scripts/bash/build-package --dists "${dist}" --arches "${arch}" --main-package-name "${fullPackageName}" --supported-distros "${supportedDistros}" --debkeyid \$DEBSIGNKEY --build-in-place --no-upload ${buildPackageArgs}
+""",
+                          returnStatus: true)
+                        if (buildResult == 50) {
+                          // buildResult 50 means that we don't have to build for this
+                          // architecture (i386) because the architecture is listed as
+                          // 'all' and so gets build when we build for amd64.
+                          org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(STAGE_NAME)
+                        } else if (buildResult != 0) {
+                          error "Package build of ${packageName} (${dist}/${arch}) failed in the previous step (exit code ${buildResult})"
+                        } else {
+                          if (!gitHub.isPRBuild()) {
+                            lock('packages') {
+                              unstash name: 'packages'
+                              stash name: 'packages', includes: 'results/*'
                             }
-                            archiveArtifacts artifacts: 'results/*'
                           }
-                          sh 'rm -rf *'
-                        } // retry
-                      } /* if/else */
+                          archiveArtifacts artifacts: 'results/*'
+                        }
+                        sh 'rm -rf *'
+                      } // retry
                     } /* stage */
                   } /* node */
                 } /* tasks */
