@@ -328,7 +328,7 @@ cd linux
           tasks.failFast = true
           parallel tasks
 
-          if (!gitHub.isPRBuild()) {
+          if (!gitHub.isPRBuild() && env.tag) {
             node(binaryPackagerNode) {
               unstash name: 'packages'
               for (d in distributionsToPackage.tokenize()) {
