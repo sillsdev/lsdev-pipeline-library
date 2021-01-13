@@ -99,13 +99,13 @@ def call(body) {
 
       node('master') {
         stage('checkout source') {
-          if (!env.tag) {
-            checkout scm
-          } else {
-            checkout scm: [$class: 'GitSCM', branches: [[ name: "refs/tags/${env.tag}" ]] ], poll: false
-          }
+          checkout scm
 
-          sh 'git fetch -q origin --tags && git clean -dxf'
+          sh 'git fetch -q origin -p --tags && git clean -dxf'
+
+          if (env.tag) {
+            sh "git checkout ${env.tag}"
+          }
 
           if (gitHub.isPRBuild() && !utils.isManuallyTriggered()) {
             if (!utils.hasMatchingChangedFiles(pullRequest.files, changedFileRegex)) {
