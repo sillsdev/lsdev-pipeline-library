@@ -369,6 +369,8 @@ fi
 
         if (gitHub.isPRBuild()) {
           pullRequest.createStatus('success', 'Test: Keyman packaging (Linux)', 'Jenkins build succeeded', env.BUILD_URL)
+        } else if (env.tag) {
+          buildDescription "<span style='background-color: yellow'>${env.tag}</span>"
         }
       } catch(Exception ex) {
         currentBuild.result = 'FAILURE'
