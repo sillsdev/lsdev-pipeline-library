@@ -1,5 +1,5 @@
 #!/usr/bin/groovy
-// Copyright (c) 2019-2020 SIL International
+// Copyright (c) 2019-2021 SIL International
 // This software is licensed under the MIT license (http://opensource.org/licenses/MIT)
 
 import org.jenkinsci.plugins.pipeline.modeldefinition.Utils
@@ -40,6 +40,10 @@ def call(body) {
           parameters([
             string(name: 'DistributionsToPackage', defaultValue: distributionsToPackage, description: 'The distributions to build packages for (separated by space)', trim: false),
             string(name: 'ArchesToPackage', defaultValue: arches, description: 'The architectures to build packages for (separated by space)'),
+            string(name: 'project', description: 'The project to build'),
+            string(name: 'branch', description: 'The base branch to build'),
+            booleanParam(name: 'force', description: 'true to force a build'),
+            string(name: 'tag', description: 'The commit to build'),
           ]),
           pipelineTriggers([
             // Trigger on GitHub push
