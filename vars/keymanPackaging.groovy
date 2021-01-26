@@ -37,14 +37,6 @@ def call(body) {
       withCredentials([string(credentialsId: 'trigger-token', variable: 'TriggerToken')]) {
         properties([
           [$class: 'GithubProjectProperty', displayName: '', projectUrlStr: 'https://github.com/keymanapp/keyman'],
-          parameters([
-            string(name: 'DistributionsToPackage', defaultValue: distributionsToPackage, description: 'The distributions to build packages for (separated by space)', trim: false),
-            string(name: 'ArchesToPackage', defaultValue: arches, description: 'The architectures to build packages for (separated by space)'),
-            string(name: 'project', description: 'The project to build'),
-            string(name: 'branch', description: 'The base branch to build'),
-            booleanParam(name: 'force', description: 'true to force a build'),
-            string(name: 'tag', description: 'The commit to build'),
-          ]),
           pipelineTriggers([
             // Trigger on GitHub push
             [$class: 'GitHubPushTrigger'],
@@ -64,6 +56,14 @@ def call(body) {
               regexpFilterText: '$project',
               regexpFilterExpression: "^pipeline-keyman-packaging/${BRANCH_NAME}\$",
             ],
+          ]),
+          parameters([
+            string(name: 'DistributionsToPackage', defaultValue: distributionsToPackage, description: 'The distributions to build packages for (separated by space)', trim: false),
+            string(name: 'ArchesToPackage', defaultValue: arches, description: 'The architectures to build packages for (separated by space)'),
+            string(name: 'project', defaultValue: env.project, description: 'The project to build'),
+            string(name: 'branch', defaultValue: env.branch, description: 'The base branch to build'),
+            booleanParam(name: 'force', defaultValue: env.force == 'true', description: 'true to force a build'),
+            string(name: 'tag', defaultValue: env.tag, description: 'The commit to build'),
           ])
         ])
       }
