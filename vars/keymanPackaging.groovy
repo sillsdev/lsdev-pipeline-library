@@ -106,6 +106,7 @@ def call(body) {
           checkout scm
 
           echo "tag=${env.tag}, force=${env.force}, branch=${env.branch}, project=${env.project}, buildCause=${currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause')}"
+          echo "build causes: ${currentBuild.getBuildCauses()}"
 
           sh 'git fetch -q origin -p --tags && git clean -dxf'
 
