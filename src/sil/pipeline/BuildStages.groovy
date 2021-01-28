@@ -132,7 +132,7 @@ def uploadStagedNugetPackages(String winNodeSpec, String nupkgPath) {
               @ECHO off
               FOR %%i IN (${nupkgPath.replace('/', '\\')}) DO (
                 IF NOT "%%~xi" == ".snupkg" (
-                  build\\nuget.exe push -Source https://api.nuget.org/v3/index.json "%%i" ${NuGetApiKey}
+                  build\\nuget.exe push -Source https://api.nuget.org/v3/index.json "%%i" %NuGetApiKey%
                 )
               )
             """
