@@ -113,9 +113,6 @@ def call(body) {
           stage('checkout source') {
             checkout scm
 
-            echo "TAG_TO_BUILD=${env.TAG_TO_BUILD}, tag=${env.tag}, force=${env.force}, branch=${env.branch}, project=${env.project}, buildCause=${currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause')}"
-            echo "build causes: ${currentBuild.getBuildCauses()}"
-
             sh 'git fetch -q origin -p --tags && git clean -dxf'
 
             if (env.TAG_TO_BUILD) {
