@@ -80,6 +80,8 @@ def call(body) {
         return
       }
 
+      echo "urlTriggered=${utils.isUrlTriggered()}; manuallyTriggered=${utils.isManuallyTriggered()}; tag=${env.tag}"
+
       def tagToBuild
       if (utils.isUrlTriggered() || utils.isManuallyTriggered()) {
         tagToBuild = env.tag
@@ -156,6 +158,8 @@ def call(body) {
                 exitJob = true
                 return
               }
+            } else if (env.force) {
+              echo "Forced build - skipping check for changed Linux files"
             } else {
               echo "Manually triggered build - skipping check for changed Linux files"
             }
