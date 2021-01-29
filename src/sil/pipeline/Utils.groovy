@@ -58,6 +58,18 @@ Boolean isManuallyTriggered() {
   return currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause') ? true : false
 }
 
+Boolean isReplay() {
+  return currentBuild.getBuildCauses('org.jenkinsci.plugins.workflow.cps.replay.ReplayCause') ? true : false
+}
+
+Boolean isUrlTriggered() {
+  return currentBuild.getBuildCauses('org.jenkinsci.plugins.gwt.GenericCause') ? true : false
+}
+
+Boolean isGitHubTriggered() {
+  return currentBuild.getBuildCauses('jenkins.branch.BranchIndexingCause') ? true : false
+}
+
 Boolean hasMatchingChangedFiles(files, regexString) {
   for (commitFile in files) {
     if (commitFile.filename =~ regexString) {
