@@ -47,6 +47,7 @@ def call(body) {
                 [key: 'branch', value: '$.branch'],
                 [key: 'force', value: '$.force'],
                 [key: 'tag', value: '$.tag'],
+                [key: 'tag2', value: '$.tag2'],
               ],
               causeString: 'URL triggered on $branch',
               token: TriggerToken,
@@ -80,10 +81,10 @@ def call(body) {
         return
       }
 
-      echo "urlTriggered=${utils.isUrlTriggered()}; manuallyTriggered=${utils.isManuallyTriggered()}; tag=${env.tag}"
+      echo "urlTriggered=${utils.isUrlTriggered()}; manuallyTriggered=${utils.isManuallyTriggered()}; tag=${env.tag}, tag2=${env.tag2}"
 
       def tagToBuild
-      if (utils.isUrlTriggered() || utils.isManuallyTriggered()) {
+      if ((utils.isUrlTriggered() && env.tag2) || utils.isManuallyTriggered()) {
         tagToBuild = env.tag
       } else {
         tagToBuild = null
