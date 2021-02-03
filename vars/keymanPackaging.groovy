@@ -81,6 +81,8 @@ def call(body) {
         return
       }
 
+      haveTag = (utils.isUrlTriggered() && env.tag2) || utils.isManuallyTriggered()
+
       def tier
       def repoSuffix
 
@@ -108,8 +110,8 @@ def call(body) {
 
           sh 'git fetch -q origin -p --tags && git clean -dxf'
 
-          if (tagToBuild) {
-            sh "git checkout ${tagToBuild}"
+          if (haveTag) {
+            sh "git checkout ${env.tag}"
           }
 
           if (gitHub.isPRBuild() && !utils.isManuallyTriggered()) {
@@ -335,7 +337,7 @@ cd ${subDirName}
           tasks.failFast = true
           parallel tasks
 
-          if (!gitHub.isPRBuild() && tagToBuild) {
+          if (!gitHub.isPRBuild() && haveTag) {
             node(binaryPackagerNode) {
               unstash name: 'packages'
               for (d in distributionsToPackage.tokenize()) {
@@ -376,8 +378,8 @@ fi
 
         if (gitHub.isPRBuild()) {
           pullRequest.createStatus('success', 'Test: Keyman packaging (Linux)', 'Jenkins build succeeded', env.BUILD_URL)
-        } else if (tagToBuild) {
-          currentBuild.description = "<span style='background-color: yellow'>${tagToBuild}</span>"
+        } else if (haveTag) {
+          currentBuild.description = "<span style='background-color: yellow'>${env.tag}</span>"
         }
       } catch(Exception ex) {
         currentBuild.result = 'FAILURE'
