@@ -266,7 +266,7 @@ cd linux
                 } /* stage */
               } /* node */
 
-              for (d in distributionsToPackage.tokenize()) {
+              for (d in env.DistributionsToPackage.tokenize()) {
                 for (a in arches.tokenize()) {
                   // don't inline these two lines!
                   def dist = d
@@ -340,7 +340,7 @@ cd ${subDirName}
           if (!gitHub.isPRBuild() && haveTag) {
             node(binaryPackagerNode) {
               unstash name: 'packages'
-              for (d in distributionsToPackage.tokenize()) {
+              for (d in env.DistributionsToPackage.tokenize()) {
                 for (a in arches.tokenize()) {
                   // don't inline these two lines!
                   def dist = d
