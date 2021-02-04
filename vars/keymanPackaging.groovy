@@ -64,7 +64,7 @@ def call(body) {
             string(name: 'project', defaultValue: env.project, description: 'The project to build'),
             string(name: 'branch', defaultValue: env.branch, description: 'The base branch to build'),
             booleanParam(name: 'force', defaultValue: env.force == 'true', description: 'true to force a build'),
-            string(name: 'tag', defaultValue: (utils.isUrlTriggered() && env.tag2) || utils.isManuallyTriggered() ? env.tag : '', description: 'The tag to build'),
+            string(name: 'tag', defaultValue: (utils.isUrlTriggered() && env.tag2) || (utils.isManuallyTriggered() && utils.isReplay()) ? env.tag : '', description: 'The tag to build'),
           ])
         ])
       }
@@ -81,7 +81,7 @@ def call(body) {
         return
       }
 
-      haveTag = (utils.isUrlTriggered() && env.tag2) || utils.isManuallyTriggered()
+      haveTag = (utils.isUrlTriggered() && env.tag2) || (utils.isManuallyTriggered() && env.tag)
 
       def tier
       def repoSuffix
