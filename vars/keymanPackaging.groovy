@@ -104,6 +104,8 @@ def call(body) {
           break
       }
 
+      echo "branch=${utils.getBranch()}, tier=${tier}, repoSuffix=${repoSuffix}"
+
       node('master') {
         stage('checkout source') {
           checkout scm
@@ -345,7 +347,7 @@ cd ${subDirName}
                   // don't inline these two lines!
                   def dist = d
                   def arch = a
-                  stage("Uploading packages for ${dist}/${arch}") {
+                  stage("Uploading packages for ${dist}/${arch} to ${dist}${repoSuffix}") {
                     sh """#!/bin/bash
 cd results/
 if ls *${dist}*${arch}.changes > /dev/null 2>&1; then
