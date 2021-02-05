@@ -61,8 +61,8 @@ def call(body) {
           parameters([
             string(name: 'DistributionsToPackage', defaultValue: distributionsToPackage, description: 'The distributions to build packages for (separated by space)', trim: false),
             string(name: 'ArchesToPackage', defaultValue: arches, description: 'The architectures to build packages for (separated by space)'),
-            string(name: 'project', defaultValue: env.project, description: 'The project to build'),
-            string(name: 'branch', defaultValue: env.branch, description: 'The base branch to build'),
+            string(name: 'project', defaultValue: env.project ? env.project : '', description: 'The project to build'),
+            string(name: 'branch', defaultValue: env.branch ? env.project : '', description: 'The base branch to build'),
             booleanParam(name: 'force', defaultValue: env.force == 'true', description: 'true to force a build'),
             string(name: 'tag', defaultValue: (utils.isUrlTriggered() && env.tag2) || (utils.isManuallyTriggered() && utils.isReplay()) ? env.tag : '', description: 'The tag to build'),
           ])
