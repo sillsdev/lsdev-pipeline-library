@@ -96,15 +96,13 @@ def call(body) {
           tier = 'beta'
           repoSuffix = '-proposed'
           break
-        case 'master':
-        case ~/PR-.*/:
+        // case 'master':
+        // case ~/PR-.*/:
         default:
           tier = 'alpha'
           repoSuffix = '-experimental'
           break
       }
-
-      echo "branch=${utils.getBranch()}, tier=${tier}, repoSuffix=${repoSuffix}"
 
       node('master') {
         stage('checkout source') {
