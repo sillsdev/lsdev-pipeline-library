@@ -9,7 +9,7 @@ import sil.pipeline.Utils
 def call(body) {
   def sourcePackagerNode = 'packager && bionic'
   def binaryPackagerNode = 'packager'
-  def supportedDistros = 'xenial bionic focal groovy hirsute'
+  def supportedDistros = 'bionic focal groovy hirsute'
   def x64OnlyDistros = 'focal groovy hirsute'
   def changedFileRegex = /(linux|common\/engine\/keyboardprocessor|common\/core\/desktop)\/.*|TIER.md|VERSION.md/
   def defaultArches = 'amd64 i386'
@@ -26,7 +26,10 @@ def call(body) {
   def distributionsToPackage = params.distributionsToPackage ?: supportedDistros
   def arches = params.arches ?: defaultArches
 
-  if (!gitHub.isPRBuild() && env.BRANCH_NAME != 'master' && env.BRANCH_NAME != 'beta' && env.BRANCH_NAME !=~ /stable/) {
+  def isAlpha  = env.BRANCH_NAME == 'master'
+  def isBeta   = env.BRANCH_NAME == 'beta'
+  def isStable = env.BRANCH_NAME ==~ /stable(-.+)?/
+  if (!gitHub.isPRBuild() && !isAlpha && !isBeta && !isStable) {
     echo "Skipping build on non-supported branch ${env.BRANCH_NAME}"
     return
   }
