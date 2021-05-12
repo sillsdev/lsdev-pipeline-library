@@ -291,7 +291,15 @@ cd linux
                       } else {
                         echo "Building ${packageName} (${dist}/${arch})"
 
+                        def retryCount = 0
                         retry(3) {
+                          if (retryCount > 0) {
+                            // we're retrying a second or third time. Wait for a minute - the
+                            // failure might have been caused by some server updates or internet
+                            // troubles which might work again after a while.
+                            sleep(60 /*seconds*/)
+                          }
+                          retryCount++
                           sh 'rm -rf *'
 
                           unstash name: "${packageName}-srcpkg"
