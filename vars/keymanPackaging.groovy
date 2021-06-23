@@ -9,8 +9,8 @@ import sil.pipeline.Utils
 def call(body) {
   def sourcePackagerNode = 'packager && bionic'
   def binaryPackagerNode = 'packager'
-  def supportedDistros = 'bionic focal groovy hirsute'
-  def x64OnlyDistros = 'focal groovy hirsute'
+  def supportedDistros = 'bionic focal groovy hirsute impish'
+  def x64OnlyDistros = 'focal groovy hirsute impish'
   def changedFileRegex = /(linux|common\/engine\/keyboardprocessor|common\/core\/desktop)\/.*|TIER.md|VERSION.md/
   def defaultArches = 'amd64 i386'
 
