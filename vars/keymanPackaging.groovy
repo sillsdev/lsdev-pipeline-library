@@ -77,8 +77,7 @@ def call(body) {
       // pipeline job will trigger this build when it detects a new PR. Since we don't
       // know if the PR contains any relevant code and we shouldn't decide this (it's
       // done in a script in the Keyman repo that runs on TC), we exit here.
-      // When the TC script triggers a build we will have the project and branch set.
-      if (!utils.isManuallyTriggered() && (!env.project || !env.branch)) {
+      if (!utils.isManuallyTriggered() && !utils.isUrlTriggered()) {
         echo 'Exiting - job is neither triggered manually nor by TC script'
         exitJob = true
         return
