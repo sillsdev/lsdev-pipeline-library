@@ -385,6 +385,7 @@ fi
 
         if (gitHub.isPRBuild()) {
           pullRequest.createStatus('success', 'Test: Keyman packaging (Linux)', 'Jenkins build succeeded', env.BUILD_URL)
+          pullRequest.comment("Linux artifacts for this PR: ${env.BUILD_URL}/artifact/*zip*/archive.zip (see instructions for [installation](https://github.com/keymanapp/keyman/wiki/How-to-test-artifacts-from-pull-requests-for-Keyman-for-Linux#installing))")
         } else if (haveTag) {
           currentBuild.description = "<span style='background-color: yellow'>${env.tag}</span>"
         }
