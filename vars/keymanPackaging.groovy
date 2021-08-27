@@ -221,7 +221,7 @@ def call(body) {
 
             def fullPackageName
             def buildPackageArgs
-            def setPrName = ''
+            def preReleaseTag = ''
             switch (utils.getBranch()) {
               case 'master':
                 fullPackageName = "${packageName}-${tier}"
@@ -238,7 +238,7 @@ def call(body) {
               case ~/PR-.*/:
                 fullPackageName = "${packageName}-${tier}-pr"
                 buildPackageArgs = '--suite-name experimental'
-                setPrName = "export PR_NAME=${env.BRANCH_NAME}"
+                preReleaseTag = "--prerelease-tag ~${env.BRANCH_NAME}"
                 break
               default:
                 echo "Unknown branch ${utils.getBranch()}"
@@ -269,7 +269,6 @@ def call(body) {
 
                   sh """#!/bin/bash
 cd linux
-${setPrName}
 ./scripts/jenkins.sh ${packageName} \$DEBSIGNKEY
 """
                   stash name: "${packageName}-srcpkg", includes: "${subDirName}${packageName}_*, ${subDirName}debian/"
@@ -316,7 +315,7 @@ fi
 basedir=\$(pwd)
 [ "${subDirName}" != "" ] && cd ${subDirName}
 
-\$HOME/ci-builder-scripts/bash/build-package --dists "${dist}" --arches "${arch}" --main-package-name "${fullPackageName}" --supported-distros "${supportedDistros}" --debkeyid \$DEBSIGNKEY --build-in-place --no-upload ${buildPackageArgs}
+\$HOME/ci-builder-scripts/bash/build-package --dists "${dist}" --arches "${arch}" --main-package-name "${fullPackageName}" --supported-distros "${supportedDistros}" --debkeyid \$DEBSIGNKEY --build-in-place --no-upload ${preReleaseTag} ${buildPackageArgs}
 """,
                           returnStatus: true)
                         if (buildResult == 50) {
