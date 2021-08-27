@@ -28,7 +28,6 @@ def call(body) {
   def arches = params.arches ?: defaultArches
   def packagesToBuild = params.packagesToBuild ?: ['keyman', 'kmflcomp', 'libkmfl', 'ibus-kmfl']
 
-  echo "env.BRANCH_NAME=${env.BRANCH_NAME}, params.branch=${params.branch}"
   def isAlpha  = env.BRANCH_NAME == 'master'
   def isBeta   = env.BRANCH_NAME == 'beta'
   def isStable = env.BRANCH_NAME ==~ /stable(-.+)?/
@@ -222,6 +221,7 @@ def call(body) {
 
             def fullPackageName
             def buildPackageArgs
+            def setPrName = ''
             switch (utils.getBranch()) {
               case 'master':
                 fullPackageName = "${packageName}-${tier}"
@@ -238,6 +238,7 @@ def call(body) {
               case ~/PR-.*/:
                 fullPackageName = "${packageName}-${tier}-pr"
                 buildPackageArgs = '--suite-name experimental'
+                setPrName = "export PR_NAME=${env.BRANCH_NAME}"
                 break
               default:
                 echo "Unknown branch ${utils.getBranch()}"
@@ -268,6 +269,7 @@ def call(body) {
 
                   sh """#!/bin/bash
 cd linux
+${setPrName}
 ./scripts/jenkins.sh ${packageName} \$DEBSIGNKEY
 """
                   stash name: "${packageName}-srcpkg", includes: "${subDirName}${packageName}_*, ${subDirName}debian/"
