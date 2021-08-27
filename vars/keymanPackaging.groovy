@@ -10,8 +10,8 @@ import sil.pipeline.Utils
 def call(body) {
   def sourcePackagerNode = 'packager && bionic'
   def binaryPackagerNode = 'packager'
-  def supportedDistros = 'bionic focal groovy hirsute impish'
-  def x64OnlyDistros = 'focal groovy hirsute impish'
+  def supportedDistros = 'bionic focal hirsute impish'
+  def x64OnlyDistros = 'focal hirsute impish'
   def changedFileRegex = /(linux|common\/engine\/keyboardprocessor|common\/core\/desktop)\/.*|TIER.md|VERSION.md/
   def defaultArches = 'amd64 i386'
 
@@ -26,7 +26,7 @@ def call(body) {
 
   def distributionsToPackage = params.distributionsToPackage ?: supportedDistros
   def arches = params.arches ?: defaultArches
-  def packagesToBuild = params.packagesToBuild ?: ['keyman-keyboardprocessor', 'kmflcomp', 'libkmfl', 'ibus-kmfl', 'keyman-config', 'ibus-keyman']
+  def packagesToBuild = params.packagesToBuild ?: ['keyman', 'kmflcomp', 'libkmfl', 'ibus-kmfl']
 
   def isAlpha  = env.BRANCH_NAME == 'master'
   def isBeta   = env.BRANCH_NAME == 'beta'
