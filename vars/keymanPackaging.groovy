@@ -28,6 +28,7 @@ def call(body) {
   def arches = params.arches ?: defaultArches
   def packagesToBuild = params.packagesToBuild ?: ['keyman', 'kmflcomp', 'libkmfl', 'ibus-kmfl']
 
+  echo "env.BRANCH_NAME=${env.BRANCH_NAME}, params.branch=${params.branch}"
   def isAlpha  = env.BRANCH_NAME == 'master'
   def isBeta   = env.BRANCH_NAME == 'beta'
   def isStable = env.BRANCH_NAME ==~ /stable(-.+)?/
