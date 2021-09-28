@@ -6,10 +6,10 @@ import org.jenkinsci.plugins.pipeline.modeldefinition.Utils
 import sil.pipeline.GitHub
 import sil.pipeline.Utils
 
-// package builds for Keyman 14
+// package builds for Keyman 14+
 def call(body) {
-  def sourcePackagerNode = 'packager && bionic'
-  def binaryPackagerNode = 'packager'
+  def sourcePackagerNode = 'packager && keyman && bionic'
+  def binaryPackagerNode = 'packager && keyman'
   def supportedDistros = 'bionic focal hirsute impish'
   def x64OnlyDistros = 'focal hirsute impish'
   def changedFileRegex = /(linux|common\/engine\/keyboardprocessor|common\/core\/desktop)\/.*|TIER.md|VERSION.md/
