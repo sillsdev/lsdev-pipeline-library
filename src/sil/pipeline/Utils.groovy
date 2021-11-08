@@ -79,4 +79,42 @@ Boolean hasMatchingChangedFiles(files, regexString) {
   return false
 }
 
+@NonCPS
+def ArrayList getMatchingAgentsForReboot(String nodeLabel) {
+  def labelExpression = hudson.model.Label.get(nodeLabel)
+  def matchingAgents = []
+  jenkins.model.Jenkins.get().nodes.each { n ->
+    agent = n.getComputer()
+    if (labelExpression.matches(n) && agent.isOnline()) {
+      matchingAgents.add(agent)
+    }
+  }
+  return matchingAgents
+}
+
+// To manually (un-)suspend an agent, run in Jenkins Script Console:
+// jenkins.model.Jenkins.get().getNode('autopackager-2').getComputer().setAcceptingTasks(true)
+@NonCPS
+def acceptTasksOnAgents(ArrayList agents, Boolean acceptTasks) {
+  for (i = 0; i < agents.size(); i++) {
+    agents[i].setAcceptingTasks(acceptTasks)
+  }
+}
+
+@NonCPS
+def rebootMatchingAgents(ArrayList matchingAgents) {
+  for (i = 0; i < matchingAgents.size(); ) {
+    agent = matchingAgents[i]
+    if (agent.countBusy() == 0) {
+      println 'Rebooting ' + agent.getDisplayName()
+      hudson.util.RemotingDiagnostics.executeGroovy('"sudo reboot".execute()', agent.getChannel());
+      agent.setAcceptingTasks(true)
+      matchingAgents.remove(i)
+    } else {
+      i++
+    }
+  }
+  return true
+}
+
 return this

@@ -1,0 +1,16 @@
+# rebootAgents
+
+Reboot the matching agents.
+
+Parameters  ||
+----------- | --
+_label_     | The nodes to select, e.g. _autopackager-1 || autopackager-2_. Required.
+
+## Example
+
+_Jenkinsfile:_
+
+	#!/usr/bin/groovy
+	@Library('lsdev-pipeline-library') _
+
+	rebootAgents(label: 'autopackager-1 || autopackager-2')
