@@ -10,6 +10,7 @@ import sil.pipeline.Utils
 def call(body) {
   def sourcePackagerNode = 'packager && keyman && bionic'
   def binaryPackagerNode = 'packager && keyman'
+  def binaryPackagerNodeJammy = 'packager && keyman && CanBuildJammy'
   def supportedDistros = 'bionic focal hirsute impish jammy'
   def x64OnlyDistros = 'focal hirsute impish jammy'
   def changedFileRegex = /(linux|common\/engine\/keyboardprocessor|common\/core\/desktop)\/.*|TIER.md|VERSION.md/
@@ -286,7 +287,9 @@ cd linux
                     continue
                   }
 
-                  node(binaryPackagerNode) {
+                  def nodeToUse = dist == 'jammy' ? binaryPackagerNodeJammy : binaryPackagerNode;
+
+                  node(nodeToUse) {
                     stage("building ${packageName} (${dist}/${arch})") {
                       echo "Building ${packageName} (${dist}/${arch})"
 
