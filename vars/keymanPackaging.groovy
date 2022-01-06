@@ -109,7 +109,7 @@ def call(body) {
           break
       }
 
-      node('master') {
+      node {
         stage('checkout source') {
           checkout scm
 
