@@ -287,7 +287,7 @@ cd linux
                     continue
                   }
 
-                  def nodeToUse = dist == 'jammy' ? binaryPackagerNodeJammy : binaryPackagerNode;
+                  def nodeToUse = (dist == 'jammy' || dist == 'impish') ? binaryPackagerNodeJammy : binaryPackagerNode;
 
                   node(nodeToUse) {
                     stage("building ${packageName} (${dist}/${arch})") {
