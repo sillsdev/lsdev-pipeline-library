@@ -183,7 +183,7 @@ def call(body) {
               ).trim()
           }
 
-          stash name: 'sourcetree', includes: 'linux/,debian/,resources/,common/,TIER.md,VERSION.md'
+          stash name: 'sourcetree', includes: 'linux/,debian/,resources/,common/,core/,TIER.md,VERSION.md'
           stash name: 'packages', includes: 'results/*', allowEmpty: true
         }
       }
