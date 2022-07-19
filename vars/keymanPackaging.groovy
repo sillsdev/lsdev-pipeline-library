@@ -11,8 +11,8 @@ def call(body) {
   def sourcePackagerNode = 'packager && keyman && bionic'
   def binaryPackagerNode = 'packager && keyman'
   def binaryPackagerNodeJammy = 'packager && keyman && CanBuildJammy'
-  def supportedDistros = 'bionic focal hirsute impish jammy'
-  def x64OnlyDistros = 'focal hirsute impish jammy'
+  def supportedDistros = 'bionic focal jammy kinetic'
+  def x64OnlyDistros = 'focal hirsute impish jammy kinetic'
   def changedFileRegex = /(linux|common\/engine\/keyboardprocessor|common\/core\/desktop)\/.*|TIER.md|VERSION.md/
   def defaultArches = 'amd64 i386'
 
@@ -287,7 +287,7 @@ cd linux
                     continue
                   }
 
-                  def nodeToUse = (dist == 'jammy' || dist == 'impish') ? binaryPackagerNodeJammy : binaryPackagerNode;
+                  def nodeToUse = (dist == 'kinetic' || dist == 'jammy' || dist == 'impish') ? binaryPackagerNodeJammy : binaryPackagerNode;
 
                   node(nodeToUse) {
                     stage("building ${packageName} (${dist}/${arch})") {
