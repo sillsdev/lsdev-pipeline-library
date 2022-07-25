@@ -247,48 +247,48 @@ def call(body) {
                 return
             }
 
-            tasks["Package build of ${packageName}"] = {
-              def subDirName
-              node(sourcePackagerNode) {
-                stage("making source package for ${fullPackageName}") {
-                  echo "Making source package for ${fullPackageName}"
-                  sh 'rm -rf *'
-                  unstash name: 'sourcetree'
+            def subDirName
+            node(sourcePackagerNode) {
+              stage("making source package for ${fullPackageName}") {
+                echo "Making source package for ${fullPackageName}"
+                sh 'rm -rf *'
+                unstash name: 'sourcetree'
 
-                  switch (packageName) {
-                    case 'keyman':
-                      subDirName = ''
-                      break
-                    case 'keyman-keyboardprocessor':
-                      subDirName = fileExists('common/core/desktop') ?
-                        'common/core/desktop/' : 'common/engine/keyboardprocessor/'
-                      break
-                    default:
-                      subDirName = fileExists("linux/legacy/${packageName}") ? "linux/legacy/${packageName}/" : "linux/${packageName}/"
-                      break
-                  }
+                switch (packageName) {
+                  case 'keyman':
+                    subDirName = ''
+                    break
+                  case 'keyman-keyboardprocessor':
+                    subDirName = fileExists('common/core/desktop') ?
+                      'common/core/desktop/' : 'common/engine/keyboardprocessor/'
+                    break
+                  default:
+                    subDirName = fileExists("linux/legacy/${packageName}") ? "linux/legacy/${packageName}/" : "linux/${packageName}/"
+                    break
+                }
 
-                  sh """#!/bin/bash
+                sh """#!/bin/bash
 cd linux
 ./scripts/jenkins.sh ${packageName} \$DEBSIGNKEY
 """
-                  stash name: "${packageName}-srcpkg", includes: "${subDirName}${packageName}_*, ${subDirName}debian/"
-                } /* stage */
-              } /* node */
+                stash name: "${packageName}-srcpkg", includes: "${subDirName}${packageName}_*, ${subDirName}debian/"
+              } /* stage */
+            } /* node */
 
-              for (d in env.DistributionsToPackage.tokenize()) {
-                for (a in arches.tokenize()) {
-                  // don't inline these two lines!
-                  def dist = d
-                  def arch = a
+            for (d in env.DistributionsToPackage.tokenize()) {
+              for (a in arches.tokenize()) {
+                // don't inline these two lines!
+                def dist = d
+                def arch = a
 
-                  if (arch == 'i386' && x64OnlyDistros.contains(dist)) {
-                    // we don't build for 32-bit on focal and later
-                    continue
-                  }
+                if (arch == 'i386' && x64OnlyDistros.contains(dist)) {
+                  // we don't build for 32-bit on focal and later
+                  continue
+                }
 
-                  def nodeToUse = (dist == 'kinetic' || dist == 'jammy' || dist == 'impish') ? binaryPackagerNodeJammy : binaryPackagerNode;
+                def nodeToUse = (dist == 'kinetic' || dist == 'jammy' || dist == 'impish') ? binaryPackagerNodeJammy : binaryPackagerNode;
 
+                tasks["Package build of ${packageName} for ${dist}/${arch}"] = {
                   node(nodeToUse) {
                     stage("building ${packageName} (${dist}/${arch})") {
                       echo "Building ${packageName} (${dist}/${arch})"
