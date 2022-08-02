@@ -1,5 +1,5 @@
 #!/usr/bin/groovy
-// Copyright (c) 2019-2021 SIL International
+// Copyright (c) 2019-2022 SIL International
 // This software is licensed under the MIT license (http://opensource.org/licenses/MIT)
 
 import org.jenkinsci.plugins.pipeline.modeldefinition.Utils
@@ -13,7 +13,7 @@ def call(body) {
   def binaryPackagerNodeJammy = 'packager && keyman && CanBuildJammy'
   def supportedDistros = 'bionic focal jammy kinetic'
   def x64OnlyDistros = 'focal hirsute impish jammy kinetic'
-  def changedFileRegex = /(linux|common\/engine\/keyboardprocessor|common\/core\/desktop)\/.*|TIER.md|VERSION.md/
+  def changedFileRegex = /(linux|common\/engine\/keyboardprocessor|common\/core\/desktop|core)\/.*|TIER.md|VERSION.md/
   def defaultArches = 'amd64 i386'
 
   // evaluate the body block, and collect configuration into the object
