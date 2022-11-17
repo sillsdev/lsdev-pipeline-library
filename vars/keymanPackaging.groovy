@@ -329,11 +329,9 @@ basedir=\$(pwd)
                         } else if (buildResult != 0) {
                           error "Package build of ${packageName} (${dist}/${arch}) failed in the previous step (exit code ${buildResult})"
                         } else {
-                          if (!gitHub.isPRBuild()) {
-                            lock('packages') {
-                              unstash name: 'packages'
-                              stash name: 'packages', includes: 'results/*'
-                            }
+                          lock('packages') {
+                            unstash name: 'packages'
+                            stash name: 'packages', includes: 'results/*'
                           }
                           archiveArtifacts artifacts: 'results/*'
                         }
@@ -349,6 +347,44 @@ basedir=\$(pwd)
           tasks.failFast = true
           parallel tasks
 
+          // Verify API
+          node(binaryPackagerNode) {
+            stage("Verifying API for libkmnkbp0.so") {
+              unstash name: "keyman-srcpkg"
+
+              if (fileExists('debian/libkmnkbp0-0.symbols')) {
+                unstash name: 'packages'
+                echo "Verifying API for libkmnkbp0.so"
+                def version = sh(
+                  script: "dpkg-parsechangelog --show-field Version | cut -d'-' -f 1",
+                  returnStdout: true,
+                ).trim()
+                def tmpDir = sh(script: """#!/bin/bash
+                  mktemp -d
+                  """, returnStdout: true).trim()
+
+                def result = sh(script: """#!/bin/bash
+mkdir -p ${tmpDir}
+dpkg -x results/libkmnkbp0-0*jammy*_amd64.deb ${tmpDir}/
+cp debian/libkmnkbp0-0.symbols .
+dpkg-gensymbols -v${version} -plibkmnkbp0-0 -e${tmpDir}/usr/lib/x86_64-linux-gnu/libkmnkbp0.so* -Olibkmnkbp0-0.symbols -c4
+RESULT=\$?
+rm -rf ${tmpDir}
+exit \$RESULT
+""",
+                  returnStatus: true)
+                archiveArtifacts artifacts: "libkmnkbp0-0.symbols"
+                if (result != 0) {
+                  echo "API verification failed for libkmnkbp0.so"
+                  error "API verification failed for libkmnkbp0.so"
+                }
+              } else {
+                echo "Skipping API verification - no symbols file found"
+              }
+            }
+          }
+
+          // Upload packages
           if (!gitHub.isPRBuild() && haveTag) {
             node(binaryPackagerNode) {
               unstash name: 'packages'
@@ -361,24 +397,24 @@ basedir=\$(pwd)
                     sh """#!/bin/bash
 cd results/
 if ls *${dist}*${arch}.changes > /dev/null 2>&1; then
-for pkg in *${dist}*${arch}.changes; do
-  pkgname=\${pkg%%_*}
-  mapfile -t debs < <(dcmd --deb \$pkg)
-  if [ "\${pkgname:0:3}" == "lib" ]; then
-    # "libg" and "libk" instead of "l"
-    subdir=\${pkgname:0:4}
-  else
-    subdir=\${pkgname:0:1}
-  fi
+  for pkg in *${dist}*${arch}.changes; do
+    pkgname=\${pkg%%_*}
+    mapfile -t debs < <(dcmd --deb \$pkg)
+    if [ "\${pkgname:0:3}" == "lib" ]; then
+      # "libg" and "libk" instead of "l"
+      subdir=\${pkgname:0:4}
+    else
+      subdir=\${pkgname:0:1}
+    fi
 
-  if wget --spider http://linux.lsdev.sil.org/ubuntu/pool/main/\${subdir}/\${pkgname}/\${debs[0]} 2>/dev/null; then
-    echo "Skipping upload of \${pkg} - already exists"
-  else
-    dput -U llso:ubuntu/${dist}${repoSuffix} \${pkg}
-  fi
-done
+    if wget --spider http://linux.lsdev.sil.org/ubuntu/pool/main/\${subdir}/\${pkgname}/\${debs[0]} 2>/dev/null; then
+      echo "Skipping upload of \${pkg} - already exists"
+    else
+      dput -U llso:ubuntu/${dist}${repoSuffix} \${pkg}
+    fi
+  done
 else
-echo "No packages for ${dist}/${arch} to upload"
+  echo "No packages for ${dist}/${arch} to upload"
 fi
 """
                   } // stage
