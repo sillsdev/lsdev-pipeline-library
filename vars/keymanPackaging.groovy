@@ -11,8 +11,8 @@ def call(body) {
   def sourcePackagerNode = 'packager && keyman && bionic'
   def binaryPackagerNode = 'packager && keyman'
   def binaryPackagerNodeJammy = 'packager && keyman && CanBuildJammy'
-  def supportedDistros = 'bionic focal jammy kinetic'
-  def x64OnlyDistros = 'focal hirsute impish jammy kinetic'
+  def supportedDistros = 'bionic focal jammy kinetic lunar'
+  def x64OnlyDistros = 'focal jammy kinetic lunar'
   def changedFileRegex = /(linux|common\/engine\/keyboardprocessor|common\/core\/desktop|core)\/.*|TIER.md|VERSION.md/
   def defaultArches = 'amd64 i386'
 
@@ -286,7 +286,7 @@ cd linux
                   continue
                 }
 
-                def nodeToUse = (dist == 'kinetic' || dist == 'jammy' || dist == 'impish') ? binaryPackagerNodeJammy : binaryPackagerNode;
+                def nodeToUse = (dist == 'lunar' || dist == 'kinetic' || dist == 'jammy') ? binaryPackagerNodeJammy : binaryPackagerNode;
 
                 tasks["Package build of ${packageName} for ${dist}/${arch}"] = {
                   node(nodeToUse) {
