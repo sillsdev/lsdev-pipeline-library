@@ -348,7 +348,7 @@ basedir=\$(pwd)
           parallel tasks
 
           // Verify API
-          node(binaryPackagerNode) {
+          node(binaryPackagerNodeJammy) {
             stage("Verifying API for libkmnkbp0.so") {
               unstash name: "keyman-srcpkg"
 
