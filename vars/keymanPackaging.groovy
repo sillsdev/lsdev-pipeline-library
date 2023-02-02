@@ -8,9 +8,9 @@ import sil.pipeline.Utils
 
 // package builds for Keyman 14+
 def call(body) {
-  def sourcePackagerNode = 'packager && keyman && bionic'
-  def binaryPackagerNode = 'packager && keyman'
-  def binaryPackagerNodeJammy = 'packager && keyman && CanBuildJammy'
+  def sourcePackagerNode = 'keyman-source'
+  def binaryPackagerNode = 'keyman'
+  def binaryPackagerNodeJammy = 'keyman && CanBuildJammy'
   def supportedDistros = 'bionic focal jammy kinetic lunar'
   def x64OnlyDistros = 'focal jammy kinetic lunar'
   def changedFileRegex = /(linux|common\/engine\/keyboardprocessor|common\/core\/desktop|core)\/.*|TIER.md|VERSION.md/
