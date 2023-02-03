@@ -198,23 +198,6 @@ def call(body) {
 
       try {
         timeout(time: 60, unit: 'MINUTES', activity: true) {
-          // install dependencies
-          // ENHANCE: it would be better to use the build-dependencies of the
-          // packages to install the dependencies. That would require maintaining
-          // the dependencies only in one place.
-          def matchingNodes = utils.getMatchingNodes(sourcePackagerNode, true)
-          def dependencyTasks = [:]
-          for (int i = 0; i < matchingNodes.size(); i++) {
-            def thisNode = matchingNodes[i]
-            dependencyTasks["Install dependencies on ${thisNode}"] = {
-              node(thisNode) {
-                unstash name: 'sourcetree'
-                sh 'linux/build/agent/install-deps'
-              }
-            }
-          }
-          parallel dependencyTasks
-
           def tasks = [:]
           for (p in packagesToBuild) {
             // don't inline this!
