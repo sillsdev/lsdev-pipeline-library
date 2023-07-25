@@ -1,5 +1,5 @@
 #!/usr/bin/groovy
-// Copyright (c) 2019-2022 SIL International
+// Copyright (c) 2019-2023 SIL International
 // This software is licensed under the MIT license (http://opensource.org/licenses/MIT)
 
 import org.jenkinsci.plugins.pipeline.modeldefinition.Utils
@@ -11,8 +11,8 @@ def call(body) {
   def sourcePackagerNode = 'keyman-source'
   def binaryPackagerNode = 'keyman'
   def binaryPackagerNodeJammy = 'keyman && CanBuildJammy'
-  def supportedDistros = 'bionic focal jammy kinetic lunar'
-  def x64OnlyDistros = 'focal jammy kinetic lunar'
+  def supportedDistros = 'bionic focal jammy lunar mantic'
+  def x64OnlyDistros = 'focal jammy lunar mantic'
   def changedFileRegex = /(linux|common\/engine\/keyboardprocessor|common\/core\/desktop|core)\/.*|TIER.md|VERSION.md/
   def defaultArches = 'amd64 i386'
 
@@ -269,7 +269,7 @@ cd linux
                   continue
                 }
 
-                def nodeToUse = (dist == 'lunar' || dist == 'kinetic' || dist == 'jammy') ? binaryPackagerNodeJammy : binaryPackagerNode;
+                def nodeToUse = (dist == 'mantic' || dist == 'lunar' || dist == 'jammy') ? binaryPackagerNodeJammy : binaryPackagerNode;
 
                 tasks["Package build of ${packageName} for ${dist}/${arch}"] = {
                   node(nodeToUse) {
